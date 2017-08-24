@@ -88,7 +88,6 @@ struct timer_counter_setup {
    _RAWR_SPECIALIZE_TIMER_COUNTER_PRESCALER_AND_SETUP(0,  256, _BV(CS02) |        0  |        0 )
    _RAWR_SPECIALIZE_TIMER_COUNTER_PRESCALER_AND_SETUP(0, 1024, _BV(CS02) |        0  | _BV(CS00))
 #endif
-
 #ifdef TCNT1
    _RAWR_SPECIALIZE_TIMER_COUNTER(1, uint16_t)
    #ifdef OCR1A

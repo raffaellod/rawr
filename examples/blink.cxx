@@ -28,10 +28,17 @@ void uc_main() {
    underlying hardware. */
    typedef rawr::hw::binary_output_pin<'B', 3, true /*initialize to logic 1*/> led;
    typedef rawr::timer_mux<0, 'B'> timer_mux;
-   /* Note: this is far from being the most effective or precise way of blinking an LED on an AVR, but it
-   adequately shows how to use the timer_mux and a binary_output_pin. */
-   timer_mux::repeat(250_ms, [] () {
-      led::toggle();
+   timer_mux::repeat(1000_ms, [] () {
+      led::set();
+      timer_mux::once(100_ms, [] () {
+         led::clear();
+      });
+      timer_mux::once(200_ms, [] () {
+         led::set();
+      });
+      timer_mux::once(300_ms, [] () {
+         led::clear();
+      });
    });
 
    sei();

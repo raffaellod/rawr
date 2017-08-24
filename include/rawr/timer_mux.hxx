@@ -118,8 +118,16 @@ public:
    ) {
       delay * ret_delay = nullptr;
       timer_ticks next_ticks = max_timer_ticks;
+      /* Disable the timer interrupt to make sure delays doesn’t change in the middle of iterating over it,
+      then get the current counter value to account for any spent ticks, since we’ll be resetting it to 0 at
+      the end of this function. */
+      bitmanip::clear(&TIMSK, tc_comp::interrupt_enable_bit);
+      timer_ticks curr_ticks = *tc::value;
       for (auto & delay : delays) {
-         if (!delay.active()) {
+         if (delay.active()) {
+            // Won’t be negative, or the interrupt would have been triggered.
+            delay.remaining_ticks -= curr_ticks;
+         } else {
             if (ret_delay) {
                // Already picked a return value.
                continue;
@@ -153,9 +161,9 @@ public:
          abort();
       }
 
+      // Reset the timer and (re-)enable the interrupt.
       *tc_comp::top = next_ticks;
       *tc::value = 0;
-      // Enable the Output Compare Interrupt.
       bitmanip::set(&TIMSK, tc_comp::interrupt_enable_bit);
 
       return static_cast<uint8_t>(ret_delay - &delays[0]);
@@ -192,6 +200,7 @@ private:
    It has a weird name to work around g++ name check for interrupt vectors. */
    static __attribute__((signal, used)) void __vector() {
       _pvt::timer_mux_asm<Index, comparator_name>::emit();
+      // Must use tc_comp::top instead of tc::value because by now value has already been reset to 0.
       timer_ticks curr_ticks = *tc_comp::top, next_ticks = max_timer_ticks;
       bool any_active = false;
       for (auto & delay : delays) {
@@ -211,6 +220,7 @@ private:
          }
       }
       if (any_active) {
+         // Reset the timer, and keep the interrupt enabled.
          *tc_comp::top = next_ticks;
          *tc::value = 0;
       } else {

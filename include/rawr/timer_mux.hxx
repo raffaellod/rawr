@@ -63,7 +63,7 @@ template <uint8_t Index, char Comparator>
 class timer_mux_base {
 protected:
    typedef hw::timer_counter<Index> tc;
-   typedef hw::timer_counter_comparator<Index, Comparator> tc_comp;
+   typedef typename tc::template comparators<Comparator> tc_comp;
    typedef typename tc::value_type timer_ticks;
 
 public:
@@ -122,7 +122,10 @@ private:
       return chrono::nanoseconds(int_round_div<uint64_t>(1000000000, int_round_div(frequency, prescaler)));
    }
 
-   // Weird name to work around g++ name check for interrupt vectors.
+   /*! Iterates over the delays, invoking the callback for any that expired. It uses the timer to track how
+   much time elapsed since it started running, for improved precision.
+
+   It has a weird name to work around g++ name check for interrupt vectors. */
    static __attribute__((signal, used)) void __vector() {
       timer_mux_base_asm<Index, Comparator>::emit();
       timer_ticks curr_ticks = *tc_comp::top, next_ticks = max_timer_ticks;
@@ -172,7 +175,9 @@ template <
    uint16_t Prescaler = _pvt::timer_mux_base<Index, Comparator>::default_prescaler(),
    uint16_t Milliscaler = _pvt::timer_mux_base<Index, Comparator>::default_milliscaler(Prescaler)
 >
-class timer_mux : public _pvt::timer_mux_base<Index, Comparator> {
+class timer_mux :
+   public _pvt::timer_mux_base<Index, Comparator>,
+   public hw::timer_counter_setup<Index, Prescaler> {
 private:
    typedef _pvt::timer_mux_base<Index, Comparator> timer_mux_base_;
    using typename timer_mux_base_::delay;
@@ -185,12 +190,13 @@ public:
       chrono::milliseconds duration, bool recurring, function<void ()> const & callback
    ) {
       delay * ret_delay = nullptr;
-      bool need_setup = true;
       timer_ticks next_ticks = timer_mux_base_::max_timer_ticks;
       for (auto & delay : timer_mux::delays) {
-         if (delay.active()) {
-            need_setup = false;
-         } else if (!ret_delay) {
+         if (!delay.active()) {
+            if (ret_delay) {
+               // Already picked a return value.
+               continue;
+            }
             /* Directly calculating:
 
                ticks = duration * 1000 / (frequency / Prescaler);
@@ -213,8 +219,6 @@ public:
             delay.initial_ticks = recurring ? delay.remaining_ticks : 0;
             delay.callback = move(callback);
             ret_delay = &delay;
-         } else {
-            continue;
          }
          next_ticks = timer_mux::calc_next_ticks(next_ticks, delay.remaining_ticks);
       }
@@ -222,16 +226,10 @@ public:
          abort();
       }
 
-      if (need_setup) {
-         *tc::control_register_b |= hw::timer_counter_prescaler<Index, Prescaler>::control_register_bitmask;
-      }
       *tc_comp::top = next_ticks;
       *tc::value = 0;
-      if (need_setup) {
-         // Enable the Output Compare Interrupt.
-         bitmanip::set(&TIMSK, tc_comp::interrupt_enable_bit);
-         sei();
-      }
+      // Enable the Output Compare Interrupt.
+      bitmanip::set(&TIMSK, tc_comp::interrupt_enable_bit);
 
       return static_cast<uint8_t>(ret_delay - &timer_mux::delays[0]);
    }

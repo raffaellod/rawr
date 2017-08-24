@@ -15,6 +15,7 @@ B3 and Vcc or GND. */
 /* MCU ATtiny4313 */
 #define F_CPU 1000000
 
+#include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/startup.hxx>
@@ -32,6 +33,8 @@ void uc_main() {
    timer_mux::repeat(250_ms, [] () {
       led::toggle();
    });
+
+   sei();
    for (;;) {
       sleep_cpu();
    }

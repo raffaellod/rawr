@@ -79,7 +79,35 @@ template <uint8_t Index>
 class timer_mux : public hw::timer_counter_setup<Index, _pvt::default_timer_mux_prescaler()> {
 public:
    static constexpr chrono::hertz frequency{F_CPU};
-   static constexpr chrono::milliseconds min_max_duration{3000};
+   static constexpr chrono::milliseconds min_max_duration{3000_ms};
+
+public:
+   struct delay_control {
+   private:
+      friend class timer_mux;
+
+   public:
+      constexpr delay_control() :
+         index(-1) {
+      }
+
+      explicit constexpr operator bool() const {
+         return index >= 0;
+      }
+
+      void cancel() {
+         // Don’t bother rescheduling the timer; that will happen when the interrupt occurs.
+         timer_mux::delays[index].callback = nullptr;
+      }
+
+   private:
+      explicit delay_control(uint8_t index_) :
+         index(static_cast<int8_t>(index_)) {
+      }
+
+   private:
+      int8_t index;
+   };
 
 private:
    static constexpr char comparator_name = 'A';
@@ -113,7 +141,7 @@ private:
    };
 
 public:
-   static uint8_t once_or_repeat(
+   static delay_control once_or_repeat(
       chrono::milliseconds duration, bool recurring, function<void ()> const & callback
    ) {
       delay * ret_delay = nullptr;
@@ -166,14 +194,14 @@ public:
       *tc::value = 0;
       bitmanip::set(&TIMSK, tc_comp::interrupt_enable_bit);
 
-      return static_cast<uint8_t>(ret_delay - &delays[0]);
+      return delay_control{static_cast<uint8_t>(ret_delay - &delays[0])};
    }
 
-   static uint8_t once(chrono::milliseconds duration, function<void ()> const & callback) {
+   static delay_control once(chrono::milliseconds duration, function<void ()> const & callback) {
       return once_or_repeat(duration, false, callback);
    }
 
-   static uint8_t repeat(chrono::milliseconds duration, function<void ()> const & callback) {
+   static delay_control repeat(chrono::milliseconds duration, function<void ()> const & callback) {
       return once_or_repeat(duration, true, callback);
    }
 

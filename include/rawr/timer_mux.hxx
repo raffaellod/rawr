@@ -59,11 +59,12 @@ struct timer_mux_asm;
 #undef _RAWR_SPECIALIZE_TIMER_DELAY_ASM
 #undef _RAWR_SPECIALIZE_TIMER_DELAY_ASM_IMPL
 
+//! Calculates the period resulting from applying the given prescaling factor to F_CPU.
 inline constexpr chrono::nanoseconds prescaled_period(uint16_t prescaler) {
    return chrono::nanoseconds(int_round_div<uint64_t>(1000000000, int_round_div<uint64_t>(F_CPU, prescaler)));
 }
 
-// Given a goal of max tick duration = 500 µs, returns the largest prescaler appropriate for frequency.
+//! Given a goal of max tick duration = 500 µs, returns the largest prescaler appropriate for frequency.
 inline constexpr uint16_t default_timer_mux_prescaler() {
    return prescaled_period(1024) <= 500000_ns ? 1024 :
           prescaled_period( 256) <= 500000_ns ?  256 :
@@ -75,6 +76,15 @@ inline constexpr uint16_t default_timer_mux_prescaler() {
 
 namespace rawr {
 
+/*! Millisecond-precision timer multiplexer. Allows to create many delays or virtual timers while consuming a
+single hardware timer.
+
+Once created, a delay can be canceled by invoking cancel() on the returned object. Delays created with the
+repeat() method are automatically re-scheduled; those created with once() are not.
+
+The range for delays is 1 millisecond up to min_max_duration (currently 3 seconds); this range is chosen to
+avoid 32-bit math operations while at the same time minimizing the number of interrupts generated (i.e.
+wake-ups from sleep). */
 template <uint8_t Index>
 class timer_mux : public hw::timer_counter_setup<Index, _pvt::default_timer_mux_prescaler()> {
 public:
@@ -197,12 +207,16 @@ public:
       return delay_control{static_cast<uint8_t>(ret_delay - &delays[0])};
    }
 
-   static delay_control once(chrono::milliseconds duration, function<void ()> const & callback) {
-      return once_or_repeat(duration, false, callback);
+   /*! Schedules a delayed call to the specified callback. The call can be prevented by invoking cancel() on
+   the returned object. */
+   static delay_control once(chrono::milliseconds delay, function<void ()> const & callback) {
+      return once_or_repeat(delay, false, callback);
    }
 
-   static delay_control repeat(chrono::milliseconds duration, function<void ()> const & callback) {
-      return once_or_repeat(duration, true, callback);
+   /*! Schedules a virtual timer to repeatedly call the specified callback. Invoking cancel() on the returned
+   object ends the calls. */
+   static delay_control repeat(chrono::milliseconds period, function<void ()> const & callback) {
+      return once_or_repeat(period, true, callback);
    }
 
 private:
@@ -225,7 +239,7 @@ private:
    /*! Iterates over the delays, invoking the callback for any that expired. It uses the timer to track how
    much time elapsed since it started running, for improved precision.
 
-   It has a weird name to work around g++ name check for interrupt vectors. */
+   It has a weird name to work around g++’s name check for interrupt vectors. */
    static __attribute__((signal, used)) void __vector() {
       _pvt::timer_mux_asm<Index, comparator_name>::emit();
       // Must use tc_comp::top instead of tc::value because by now value has already been reset to 0.

@@ -7,7 +7,7 @@ This file is distributed under the terms of the Creative Commons Attribution-Sha
 ------------------------------------------------------------------------------------------------------------*/
 
 /*! @file
-Variable-speed LEDs blinker example
+Variable-frequency LED blinker example
 
 Starting from a frequency of 4 Hz, the LED connected to pin B4 (active high) will be toggled at a frequency
 adjustable by grounding D4 (adjust faster) or D5 (adjust slower). */

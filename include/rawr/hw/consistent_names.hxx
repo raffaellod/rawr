@@ -51,3 +51,7 @@ more details.
 #if !defined(TIMER0_COMPB_vect) && defined(TIM0_COMPB_vect)
    #define TIMER0_COMPB_vect TIM0_COMPB_vect
 #endif
+
+#if !defined(WDTCR) && defined(WDTCSR)
+   #define WDTCR WDTCSR
+#endif

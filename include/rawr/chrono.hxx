@@ -71,8 +71,36 @@ public:
       return count_ != 0;
    }
 
-   constexpr time_unit operator+(count_type addend) const {
-      return time_unit(count_ + addend);
+   constexpr time_unit & operator+=(time_unit addend) {
+      count_ += addend.count_;
+      return *this;
+   }
+
+   constexpr time_unit & operator-=(time_unit subtrahend) {
+      count_ -= subtrahend.count_;
+      return *this;
+   }
+
+   constexpr time_unit & operator*=(count_type multiplier) {
+      count_ *= multiplier;
+      return *this;
+   }
+
+   constexpr time_unit & operator/=(count_type divisor) {
+      count_ /= divisor;
+      return *this;
+   }
+
+   constexpr time_unit operator+(time_unit addend) const {
+      return time_unit(count_ + addend.count_);
+   }
+
+   constexpr time_unit operator-(time_unit subtrahend) const {
+      return time_unit(count_ - subtrahend.count_);
+   }
+
+   constexpr time_unit operator*(count_type multiplier) const {
+      return time_unit(count_ * multiplier);
    }
 
    constexpr time_unit operator/(count_type divisor) const {
@@ -99,7 +127,7 @@ private:
    count_type count_;
 };
 
-// The associate integer types are large enough to hold about 1 minute.
+// The associated integer types are large enough to hold about 1 minute.
 typedef time_unit< uint8_t,          1> seconds;
 typedef time_unit<uint16_t,       1000> milliseconds;
 typedef time_unit<uint32_t,    1000000> microseconds;

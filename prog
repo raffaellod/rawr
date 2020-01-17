@@ -81,7 +81,7 @@ WARN_CFLAGS="${WARN_CFLAGS:-} -Wsign-conversion"      # Warn for implicit conver
 WARN_CFLAGS="${WARN_CFLAGS:-} -Wundef"                # Warn if an undefined identifier is evaluated in “#if”.
 CFLAGS="-I${rawr_dir}/include ${CFLAGS}"
 CFLAGS="-fno-fat-lto-objects -g0 -Os ${WARN_CFLAGS} ${CFLAGS}"
-CFLAGS="-std=c++14 -fvisibility=internal ${CFLAGS}"
+CFLAGS="-std=c++17 -fvisibility=internal ${CFLAGS}"
 # Change to false to link against avr-libc’s startup files for maximum compatibility.
 if true; then
    CFLAGS="-DRAWR_STARTUP ${CFLAGS}"

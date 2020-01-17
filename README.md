@@ -54,7 +54,7 @@ as avr-libc supports a given microcontroller, so will RAWR.
 With the goal of generating the smallest firmware possible, RAWR by default will not link in avr-libc startup
 files, instead providing its own. This behavior can be changed with a one-line change in the prog script.
 
-RAWR requires a g++ version able to compile C++14.
+RAWR requires a g++ version with C++17 support.
 
 
 

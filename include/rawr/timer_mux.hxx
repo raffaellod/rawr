@@ -97,7 +97,7 @@ public:
 
    public:
       constexpr delay_control() :
-         index(-1) {
+         index{-1} {
       }
 
       explicit constexpr operator bool() const {
@@ -111,7 +111,7 @@ public:
 
    private:
       explicit delay_control(uint8_t index_) :
-         index(static_cast<int8_t>(index_)) {
+         index{static_cast<int8_t>(index_)} {
       }
 
    private:
@@ -124,7 +124,7 @@ private:
    typedef typename tc::template comparators<comparator_name> tc_comp;
    typedef typename tc::value_type timer_ticks;
 
-   static constexpr timer_ticks max_timer_ticks = static_cast<timer_ticks>(~timer_ticks());
+   static constexpr timer_ticks max_timer_ticks = static_cast<timer_ticks>(~timer_ticks{});
    static constexpr uint16_t prescaler = _pvt::default_timer_mux_prescaler();
 
    /* Given a goal of avoiding overflow of uint16_t for min_max_duration, returns a “milliscaler” appropriate
@@ -222,8 +222,8 @@ private:
    static constexpr timer_ticks calc_next_ticks(timer_ticks next_ticks, uint16_t remaining_ticks) {
       return static_cast<timer_ticks>(min(
          min(remaining_ticks, static_cast<uint16_t>(next_ticks)),
-         static_cast<uint16_t>(~timer_ticks(0)
-      )));
+         static_cast<uint16_t>(~timer_ticks{0})
+      ));
    }
 
    template <typename Ret = uint16_t>

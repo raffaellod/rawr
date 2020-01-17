@@ -28,7 +28,7 @@ public:
 
 public:
    explicit constexpr hertz(count_type count__ = 0) :
-      count_(count__) {
+      count_{count__} {
    }
 
    explicit constexpr operator bool() const {
@@ -64,7 +64,7 @@ public:
 
 public:
    explicit constexpr time_unit(count_type count__ = 0) :
-      count_(count__) {
+      count_{count__} {
    }
 
    explicit constexpr operator bool() const {

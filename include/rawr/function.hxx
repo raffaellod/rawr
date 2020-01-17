@@ -37,15 +37,15 @@ private:
       void * obj;
 
       constexpr target_t() :
-         obj(nullptr) {
+         obj{nullptr} {
       }
 
       constexpr target_t(nonmember_target_fn func_) :
-         func(func_) {
+         func{func_} {
       }
 
       constexpr target_t(void * obj_) :
-         obj(obj_) {
+         obj{obj_} {
       }
    };
 
@@ -78,20 +78,20 @@ public:
 
 public:
    constexpr function() :
-      caller(nullptr) {
+      caller{nullptr} {
    }
 
    /* target_ is T instead of Ret (*)(Args...) so it can match a capture-less lambda, which can then be
    implicitly converted to Ret (*)(Args...). */
    template <typename T>
    /*implicit*/ constexpr function(T target_) :
-      caller(&nonmember_caller_impl),
-      target(target_) {
+      caller{&nonmember_caller_impl},
+      target{target_} {
    }
 
    constexpr function(function const & src) :
-      caller(src.caller),
-      target(src.target) {
+      caller{src.caller},
+      target{src.target} {
    }
 
    function & operator=(decltype(nullptr)) {
@@ -132,8 +132,8 @@ public:
 private:
    template <typename T, member_target_fn<T> M>
    explicit constexpr function(bind_stage2<T, M> bound) :
-      caller(&this_caller_impl<T, M>::call),
-      target(bound.obj) {
+      caller{&this_caller_impl<T, M>::call},
+      target{bound.obj} {
    }
 
 private:

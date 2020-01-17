@@ -15,11 +15,11 @@
 
 rawr_dir="${0%/*}"
 cmd="${1}"
-shift
 if [ -z "${cmd}" ]; then
    echo 'no command specified; please specify one of: build write clean'
-   exit 1;
+   exit 1
 fi
+shift
 
 # Constants.
 asm_dir=asm
@@ -34,7 +34,7 @@ fi
 
 if [ "${#}" -eq 0 ]; then
    echo 'no source files specified'
-   exit 1;
+   exit 1
 fi
 # Generate a name for the program from the first source file name, stripping its path and suffix.
 prog_name="${1##*/}"
@@ -129,7 +129,7 @@ build() {
    )
    CFLAGS="-mmcu=${gcc_mcu} ${CFLAGS}"
 
-   mkdir "${asm_dir}" "${int_dir}" 2>/dev/null || true
+   mkdir -p "${asm_dir}" "${int_dir}"
 
    local int_file src_file src_asm_file
    for src_file; do
@@ -158,13 +158,13 @@ build() {
    # +   %{!nodevicelib:-L/usr/avr/lib/avr25 -lattiny4313}
 
    echo "Linking ${bin_file}"
-   mkdir "${bin_dir}" 2>/dev/null || true
+   mkdir -p "${bin_dir}"
    {
       for src_file; do
          echo "${int_dir}/${src_file##*/}.o"
       done
       for lib in ${LDLIBS}; do
-         printf '%s\n' "${lib}"
+         echo "${lib}"
       done
    } |
    xargs avr-g++ ${CFLAGS} ${LDFLAGS} -o "${bin_file}"
@@ -173,7 +173,7 @@ build() {
    avr-objdump -CS "${bin_file}" >"${bin_asm_file}"
 
    echo "Generating ${hex_file}"
-   mkdir "${hex_dir}" 2>/dev/null || true
+   mkdir -p "${hex_dir}"
    avr-objcopy -j .text -j .data -O ihex "${bin_file}" "${hex_file}"
    awk <"${hex_file}" '
       function hex_value(hex_number,    i, ret) {

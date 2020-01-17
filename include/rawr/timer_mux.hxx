@@ -15,7 +15,6 @@ more details.
 #pragma once
 
 #include <rawr/alias.hxx>
-#include <rawr/bitmanip.hxx>
 #include <rawr/chrono.hxx>
 #include <rawr/function.hxx>
 #include <rawr/hw/timer_counter.hxx>
@@ -159,8 +158,8 @@ public:
       /* Disable the timer interrupt to make sure delays doesn’t change in the middle of iterating over it,
       then get the current counter value to account for any spent ticks, since we’ll be resetting it to 0 at
       the end of this function. */
-      bitmanip::clear(&TIMSK, tc_comp::interrupt_enable_bit);
-      timer_ticks curr_ticks = *tc::value;
+      TIMSK.clear_bit(tc_comp::interrupt_enable_bit);
+      timer_ticks curr_ticks = tc::value;
       for (auto & delay : delays) {
          if (delay.active()) {
             // Won’t be negative, or the interrupt would have been triggered.
@@ -200,9 +199,9 @@ public:
       }
 
       // Reset the timer and (re-)enable the interrupt.
-      *tc_comp::top = next_ticks;
-      *tc::value = 0;
-      bitmanip::set(&TIMSK, tc_comp::interrupt_enable_bit);
+      tc_comp::top = next_ticks;
+      tc::value = 0;
+      TIMSK.set_bit(tc_comp::interrupt_enable_bit);
 
       return delay_control{static_cast<uint8_t>(ret_delay - &delays[0])};
    }
@@ -243,7 +242,7 @@ private:
    static __attribute__((signal, used)) void __vector() {
       _pvt::timer_mux_asm<Index, comparator_name>::emit();
       // Must use tc_comp::top instead of tc::value because by now value has already been reset to 0.
-      timer_ticks curr_ticks = *tc_comp::top, next_ticks = max_timer_ticks;
+      timer_ticks curr_ticks = tc_comp::top, next_ticks = max_timer_ticks;
       bool any_active = false;
       for (auto & delay : delays) {
          if (delay.active()) {
@@ -263,10 +262,10 @@ private:
       }
       if (any_active) {
          // Reset the timer, and keep the interrupt enabled.
-         *tc_comp::top = next_ticks;
-         *tc::value = 0;
+         tc_comp::top = next_ticks;
+         tc::value = 0;
       } else {
-         bitmanip::clear(&TIMSK, tc_comp::interrupt_enable_bit);
+         TIMSK.clear_bit(tc_comp::interrupt_enable_bit);
       }
    }
 

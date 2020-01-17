@@ -15,12 +15,12 @@ the watchdog timer is running. After 4 seconds of inactivity, the microcontrolle
 /* MCU ATtiny4313 */
 #define F_CPU 1000000
 
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <rawr/binary_input_pin.hxx>
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/hw/watchdog_timer.hxx>
 #include <rawr/startup.hxx>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

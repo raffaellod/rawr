@@ -14,8 +14,7 @@ more details.
 
 #pragma once
 
-#include <avr/io.h>
-#include <rawr/hw/consistent_names.hxx>
+#include <rawr/hw/io.hxx>
 #include <rawr/static_constructor.hxx>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,10 +36,10 @@ struct timer_counter_setup {
 #define _RAWR_SPECIALIZE_TIMER_COUNTER(index, uint_t) \
    template <> \
    struct timer_counter<index> { \
-      static constexpr auto control_register_a = &RAWR_CPP_CAT3(TCCR, index, A); \
-      static constexpr auto control_register_b = &RAWR_CPP_CAT3(TCCR, index, B); \
+      static constexpr decltype(RAWR_CPP_CAT3(TCCR, index, A)) control_register_a{}; \
+      static constexpr decltype(RAWR_CPP_CAT3(TCCR, index, B)) control_register_b{}; \
       typedef uint_t value_type; \
-      static constexpr auto value = &RAWR_CPP_CAT2(TCNT, index); \
+      static constexpr decltype(RAWR_CPP_CAT2(TCNT, index)) value{}; \
       \
       template <char Comparator> \
       struct comparators { \
@@ -58,7 +57,7 @@ struct timer_counter_setup {
    template <> \
    struct timer_counter<index>::comparators<comparator> { \
       static constexpr uint8_t interrupt_enable_bit = RAWR_CPP_CAT3(OCIE, index, comp_unquoted); \
-      static constexpr auto top = &RAWR_CPP_CAT3(OCR, index, comp_unquoted); \
+      static constexpr decltype(RAWR_CPP_CAT3(OCR, index, comp_unquoted)) top{}; \
    };
 #define _RAWR_SPECIALIZE_TIMER_COUNTER_PRESCALER_AND_SETUP(index, prescaler, bits) \
    template <> \
@@ -71,7 +70,7 @@ struct timer_counter_setup {
    private: \
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw19timer_counter_setupILh" RAWR_TOSTRING(index) "ELj" RAWR_TOSTRING(prescaler) "EvE") \
          typedef timer_counter<index> tc; \
-         *tc::control_register_b |= tc::prescalers<prescaler>::control_register_bits; \
+         tc::control_register_b |= tc::prescalers<prescaler>::control_register_bits; \
       RAWR_STATIC_CONSTRUCTOR_END() \
    };
 #ifdef TCNT0

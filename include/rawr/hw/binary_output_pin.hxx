@@ -14,7 +14,6 @@ more details.
 
 #pragma once
 
-#include <rawr/bitmanip.hxx>
 #include <rawr/hw/io_port.hxx>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -32,11 +31,11 @@ private:
 public:
    static void setup(bool value = false) {
       if (value) {
-         bitmanip::set(io_port_::data, Bit);
+         io_port_::data.set_bit(Bit);
       } else {
-         bitmanip::clear(io_port_::data, Bit);
+         io_port_::data.clear_bit(Bit);
       }
-      bitmanip::set(io_port_::data_direction, Bit);
+      io_port_::data_direction.set_bit(Bit);
    }
 };
 
@@ -62,9 +61,9 @@ private:
 public:
    static void set(bool value = true) {
       if (value) {
-         bitmanip::set(io_port_::data, Bit);
+         io_port_::data.set_bit(Bit);
       } else {
-         bitmanip::clear(io_port_::data, Bit);
+         io_port_::data.clear_bit(Bit);
       }
    }
 
@@ -73,7 +72,7 @@ public:
    }
 
    static void toggle() {
-      bitmanip::toggle(io_port_::data, Bit);
+      io_port_::data.toggle_bit(Bit);
    }
 };
 

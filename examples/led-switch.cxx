@@ -15,12 +15,12 @@ D4 is grounded. Both D4 and D5 feature a software debouncer using timer_mux. */
 /* MCU ATtiny4313 */
 #define F_CPU 1000000
 
-#include <avr/interrupt.h>
-#include <avr/sleep.h>
 #include <rawr/binary_input_pin.hxx>
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/startup.hxx>
 #include <rawr/timer_mux.hxx>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

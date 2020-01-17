@@ -103,14 +103,14 @@ private:
 
 public:
    static void setup(bool pullup) {
-      bitmanip::clear(io_port_::data_direction, Bit);
+      io_port_::data_direction.clear_bit(Bit);
       if (pullup) {
-         bitmanip::set(io_port_::data, Bit);
+         io_port_::data.set_bit(Bit);
       } else {
-         bitmanip::clear(io_port_::data, Bit);
+         io_port_::data.clear_bit(Bit);
       }
-      bitmanip::set(io_port_::pcint_mask, Bit);
-      bitmanip::set(&PCICR, io_port_::pcint_enable_bit);
+      io_port_::pcint_mask.set_bit(Bit);
+      PCICR.set_bit(io_port_::pcint_enable_bit);
    }
 };
 
@@ -141,7 +141,7 @@ private:
 public:
    // Note: this clears the “interrupt occurred” flag for the whole port, not just this pin.
    static void clear() {
-      bitmanip::set(&PCIFR, io_port_::pcint_flag_bit);
+      PCIFR.set_bit(io_port_::pcint_flag_bit);
    }
 
    static void set_callback(function<void (bool)> const & callback) {

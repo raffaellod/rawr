@@ -14,7 +14,7 @@ more details.
 
 #pragma once
 
-#include <avr/io.h>
+#include <rawr/hw/io.hxx>
 #include <rawr/misc.hxx>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ more details.
 
 extern "C" [[noreturn]] __attribute__((section(".init9"))) void uc_main();
 
-__asm__ __volatile__(
+__asm__(
    "\n\t" ".section .init0,\"ax\",@progbits"
    "\n\t" ".global __vectors"
    "\n\t" ".func __vectors"
@@ -69,7 +69,7 @@ __asm__ __volatile__(
 #endif
 );
 
-__asm__ __volatile__ (
+__asm__(
    "\n\t" ".section .note.gnu.avr.deviceinfo, \"\", @note"
    "\n\t" "   .long .L__note1_name_end - .L__note1_name_begin"
    "\n\t" "   .long .L__note1_contents_end - .L__note1_contents_begin"

@@ -19,25 +19,25 @@ more details.
 namespace rawr { namespace bitmanip {
 
 template <typename T>
-inline constexpr void clear(T * t, uint8_t bit) {
+inline constexpr void clear(T * t, unsigned bit) {
    *t = static_cast<T>(*t & static_cast<T>(~static_cast<T>(1 << bit)));
 }
 template <typename T, typename... Ts>
-inline constexpr void clear(T * t, uint8_t bit, Ts... more_bits) {
+inline constexpr void clear(T * t, unsigned bit, Ts... more_bits) {
    return clear(t, bit) | clear(t, more_bits...);
 }
 
 template <typename T>
-inline constexpr void set(T * t, uint8_t bit) {
+inline constexpr void set(T * t, unsigned bit) {
    *t = static_cast<T>(*t | static_cast<T>(1 << bit));
 }
 template <typename T, typename... Ts>
-inline constexpr void set(T * t, uint8_t bit, Ts... more_bits) {
+inline constexpr void set(T * t, unsigned bit, Ts... more_bits) {
    return set(t, bit) | set(t, more_bits...);
 }
 
 template <typename T>
-inline constexpr void toggle(T * t, uint8_t bit) {
+inline constexpr void toggle(T * t, unsigned bit) {
    *t = static_cast<T>(*t ^ static_cast<T>(1 << bit));
 }
 

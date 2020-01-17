@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2020 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -14,9 +14,7 @@ more details.
 
 #pragma once
 
-#include <avr/io.h>
-#include <rawr/bitmanip.hxx>
-#include <rawr/hw/consistent_names.hxx>
+#include <rawr/hw/io.hxx>
 #include <rawr/misc.hxx>
 #include <rawr/static_constructor.hxx>
 
@@ -81,7 +79,7 @@ struct port_pcint;
    struct port_pcint<index> { \
       static constexpr uint8_t pcint_enable_bit = pcie; \
       static constexpr uint8_t pcint_flag_bit = pcif; \
-      static constexpr auto pcint_mask = &pcmsk; \
+      static constexpr decltype(pcmsk) pcint_mask{}; \
    };
 #ifdef PCIE0
    _RAWR_SPECIALIZE_PORT_PCINT(0, PCMSK0, PCIE0, PCIF0)
@@ -112,9 +110,9 @@ struct io_port {
    template <> \
    struct io_port<port> : \
       public _pvt::port_pcint<_pvt::irq_to_pcint_index<_pvt::port_to_pcint_irq<port>::value>::value> { \
-      static constexpr auto data_direction = &RAWR_CPP_CAT2(DDR, port_unquoted); \
-      static constexpr auto data = &RAWR_CPP_CAT2(PORT, port_unquoted); \
-      static constexpr auto pins = &RAWR_CPP_CAT2(PIN, port_unquoted); \
+      static constexpr decltype(RAWR_CPP_CAT2(DDR, port_unquoted)) data_direction{}; \
+      static constexpr decltype(RAWR_CPP_CAT2(PORT, port_unquoted)) data{}; \
+      static constexpr decltype(RAWR_CPP_CAT2(PIN, port_unquoted)) pins{}; \
       static constexpr uint8_t bit_size = defined_pins; \
    };
 #ifdef PORTA
@@ -258,7 +256,7 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
    private: \
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw19io_port_input_setupILc" RAWR_TOSTRING(port_ascii) "EvE") \
          typedef io_port<port_ascii> io_port_; \
-         bitmanip::set(&PCICR, io_port_::pcint_enable_bit); \
+         PCICR.set_bit(io_port_::pcint_enable_bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    };
 
@@ -274,7 +272,7 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw23io_port_bit_input_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb1ELb0EvE") \
          typedef io_port<port_ascii> io_port_; \
          /* Default for DDRxn is 0, so we don’t need to set that. */ \
-         bitmanip::set(io_port_::data, bit); \
+         io_port_::data.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    }; \
    \
@@ -285,7 +283,7 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw23io_port_bit_input_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb0ELb1EvE") \
          typedef io_port<port_ascii> io_port_; \
          /* Default for DDRxn and PORTxn is 0, so we don’t need to set those. */ \
-         bitmanip::set(io_port_::pcint_mask, bit); \
+         io_port_::pcint_mask.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    }; \
    \
@@ -296,8 +294,8 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw23io_port_bit_input_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb1ELb1EvE") \
          typedef io_port<port_ascii> io_port_; \
          /* Default for DDRxn is 0, so we don’t need to set that. */ \
-         bitmanip::set(io_port_::data, bit); \
-         bitmanip::set(io_port_::pcint_mask, bit); \
+         io_port_::data.set_bit(bit); \
+         io_port_::pcint_mask.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    }; \
    \
@@ -307,7 +305,7 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw24io_port_bit_output_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb0EvE") \
          typedef io_port<port_ascii> io_port_; \
          /* Default for PORTxn is 0, so we don’t need to set that. */ \
-         bitmanip::set(io_port_::data_direction, bit); \
+         io_port_::data_direction.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    }; \
    \
@@ -317,8 +315,8 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
       RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw24io_port_bit_output_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb1EvE") \
          typedef io_port<port_ascii> io_port_; \
          /* Set in this order per Atmel recommendation. */ \
-         bitmanip::set(io_port_::data, bit); \
-         bitmanip::set(io_port_::data_direction, bit); \
+         io_port_::data.set_bit(bit); \
+         io_port_::data_direction.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    };
 #ifdef PORTA

@@ -89,6 +89,19 @@ if true; then
 fi
 unset WARN_CFLAGS
 
+is_gentoo() {
+   [ $(. /etc/os-release && echo "${ID}") = gentoo ]
+}
+
+if is_gentoo; then
+   for d in /usr/avr/lib/*; do
+      if [ -d "${d}" ]; then
+         LDFLAGS="${LDFLAGS} -L${d}"
+      fi
+   done
+   LDFLAGS="${LDFLAGS} -L/usr/avr/lib"
+fi
+
 ##############################################################################################################
 
 lastmtime() {

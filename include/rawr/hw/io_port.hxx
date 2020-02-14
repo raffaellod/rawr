@@ -106,14 +106,29 @@ struct io_port {
    static_assert(!Port, "the selected MCU does not seem to have this port");
 };
 
-#define _RAWR_SPECIALIZE_IO_PORT(port, port_unquoted, defined_pins) \
+//! Identifies a pin of an I/O port as a type; used as template argument for other classes.
+template <char Port, uint8_t Pin>
+struct io_port_pin {
+   // Check for just any value known to be false.
+   static_assert(!Port, "the selected MCU does not seem to have this port");
+};
+
+#define _RAWR_SPECIALIZE_IO_PORT(port_quoted, port_unquoted, defined_pins) \
    template <> \
-   struct io_port<port> : \
-      public _pvt::port_pcint<_pvt::irq_to_pcint_index<_pvt::port_to_pcint_irq<port>::value>::value> { \
+   struct io_port<port_quoted> : \
+      public _pvt::port_pcint<_pvt::irq_to_pcint_index<_pvt::port_to_pcint_irq<port_quoted>::value>::value> { \
+      static constexpr char name = port_quoted; \
       static constexpr decltype(RAWR_CPP_CAT2(DDR, port_unquoted)) data_direction{}; \
       static constexpr decltype(RAWR_CPP_CAT2(PORT, port_unquoted)) data{}; \
       static constexpr decltype(RAWR_CPP_CAT2(PIN, port_unquoted)) pins{}; \
       static constexpr uint8_t bit_size = defined_pins; \
+   }; \
+   \
+   template <uint8_t Pin> \
+   struct io_port_pin<port_quoted, Pin> { \
+      static_assert(Pin <= defined_pins, "the selected MCU does not seem to have this port pin"); \
+      typedef io_port<port_quoted> port; \
+      static constexpr auto pin = Pin; \
    };
 #ifdef PORTA
    #if defined(PORTA7)

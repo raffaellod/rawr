@@ -21,9 +21,7 @@ more details.
 namespace rawr {
 
 //! Resets the device.
-[[noreturn]] __attribute__((naked, weak)) void reset();
-
-void reset() {
+inline __attribute__((naked)) void reset() {
    __asm__ __volatile__(
       "\r\n" "cli"
    );

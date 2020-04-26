@@ -24,21 +24,14 @@ B3 and Vcc or GND. */
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void uc_main() {
-   /* Declaring (and using, below) these types is sufficient to generate initialization code for the
-   underlying hardware. */
-   typedef rawr::hw::binary_output_pin<'B', 3, true /*initialize to logic 1*/> led;
-   typedef rawr::timer_mux<0> timer_mux;
-   timer_mux::repeat(1000_ms, [] () {
-      led::set();
-      timer_mux::once(100_ms, [] () {
-         led::clear();
-      });
-      timer_mux::once(200_ms, [] () {
-         led::set();
-      });
-      timer_mux::once(300_ms, [] () {
-         led::clear();
-      });
+   rawr::hw::binary_output_pin<'B', 3> led{true /*initialize to logic 1*/};
+   rawr::timer_mux<0> timer_mux;
+
+   bool on{true};
+   led.set();
+   timer_mux.repeat(250_ms, [&] () {
+      on = !on;
+      led.set(on);
    });
 
    sei();

@@ -32,7 +32,6 @@ struct timer_mux_asm;
    struct timer_mux_asm<index, comparator_ascii> { \
       static void emit() { \
          RAWR_ALIAS(RAWR_TOSTRING(vector), prefix "EE8__vectorEv"); \
-         RAWR_ALIAS(prefix "EE6delaysE", prefix "EE12delays_bytesE"); \
       } \
    };
 #define _RAWR_SPECIALIZE_TIMER_DELAY_ASM(index, comparator_ascii, vector) \
@@ -85,7 +84,7 @@ The range for delays is 1 millisecond up to min_max_duration (currently 3 second
 avoid 32-bit math operations while at the same time minimizing the number of interrupts generated (i.e.
 wake-ups from sleep). */
 template <uint8_t Index>
-class timer_mux : public hw::timer_counter_setup<Index, _pvt::default_timer_mux_prescaler()> {
+class timer_mux {
 public:
    static constexpr chrono::hertz frequency{F_CPU};
    static constexpr chrono::milliseconds min_max_duration{3000_ms};
@@ -119,13 +118,14 @@ public:
    };
 
 private:
-   static constexpr char comparator_name = 'A';
-   typedef hw::timer_counter<Index> tc;
-   typedef typename tc::template comparators<comparator_name> tc_comp;
-   typedef typename tc::value_type timer_ticks;
+   static constexpr char comparator_name{'A'};
+   typedef hw::timer_counter<Index> timer_counter_t;
+   typedef typename timer_counter_t::template comparators<comparator_name> tc_comp;
+   typedef typename timer_counter_t::value_type timer_ticks;
 
-   static constexpr timer_ticks max_timer_ticks = static_cast<timer_ticks>(~timer_ticks{});
-   static constexpr uint16_t prescaler = _pvt::default_timer_mux_prescaler();
+   static constexpr timer_ticks max_timer_ticks{static_cast<timer_ticks>(~timer_ticks{})};
+   static constexpr uint16_t prescaler{_pvt::default_timer_mux_prescaler()};
+   typedef typename timer_counter_t::template prescalers<prescaler> tc_prescaler;
 
    /* Given a goal of avoiding overflow of uint16_t for min_max_duration, returns a “milliscaler” appropriate
    for frequency and the given prescaler. A milliscaler must divide 1000 yielding an integer quotient. */
@@ -138,8 +138,7 @@ private:
 
    static constexpr uint16_t milliscaler = default_milliscaler();
 
-private:
-   struct delay {
+   struct delay_t {
       uint16_t remaining_ticks;
       uint16_t initial_ticks;
       function<void ()> callback;
@@ -150,16 +149,21 @@ private:
    };
 
 public:
-   static delay_control once_or_repeat(
+   timer_mux() {
+      static_this = this;
+      timer.control_register_b |= tc_prescaler::control_register_bits;
+   }
+
+   delay_control once_or_repeat(
       chrono::milliseconds duration, bool recurring, function<void ()> const & callback
    ) {
-      delay * ret_delay = nullptr;
-      timer_ticks next_ticks = max_timer_ticks;
+      delay_t * ret_delay{nullptr};
+      timer_ticks next_ticks{max_timer_ticks};
       /* Disable the timer interrupt to make sure delays doesn’t change in the middle of iterating over it,
       then get the current counter value to account for any spent ticks, since we’ll be resetting it to 0 at
       the end of this function. */
       TIMSK.clear_bit(tc_comp::interrupt_enable_bit);
-      timer_ticks curr_ticks = tc::value;
+      timer_ticks curr_ticks{timer.value};
       for (auto & delay : delays) {
          if (delay.active()) {
             // Won’t be negative, or the interrupt would have been triggered.
@@ -200,7 +204,7 @@ public:
 
       // Reset the timer and (re-)enable the interrupt.
       tc_comp::top = next_ticks;
-      tc::value = 0;
+      timer.value = 0;
       TIMSK.set_bit(tc_comp::interrupt_enable_bit);
 
       return delay_control{static_cast<uint8_t>(ret_delay - &delays[0])};
@@ -208,13 +212,13 @@ public:
 
    /*! Schedules a delayed call to the specified callback. The call can be prevented by invoking cancel() on
    the returned object. */
-   static delay_control once(chrono::milliseconds delay, function<void ()> const & callback) {
+   delay_control once(chrono::milliseconds delay, function<void ()> const & callback) {
       return once_or_repeat(delay, false, callback);
    }
 
    /*! Schedules a virtual timer to repeatedly call the specified callback. Invoking cancel() on the returned
    object ends the calls. */
-   static delay_control repeat(chrono::milliseconds period, function<void ()> const & callback) {
+   delay_control repeat(chrono::milliseconds period, function<void ()> const & callback) {
       return once_or_repeat(period, true, callback);
    }
 
@@ -226,22 +230,10 @@ private:
       ));
    }
 
-   template <typename Ret = uint16_t>
-   static constexpr Ret milliscaled_ticks(
-      chrono::milliseconds delay, uint16_t prescaler, uint16_t milliscaler
-   ) {
-      return static_cast<Ret>(delay.count()) * static_cast<Ret>(
-         int_round_div(int_round_div(frequency, prescaler), milliscaler).count()
-      );
-   }
-
    /*! Iterates over the delays, invoking the callback for any that expired. It uses the timer to track how
-   much time elapsed since it started running, for improved precision.
-
-   It has a weird name to work around g++’s name check for interrupt vectors. */
-   static __attribute__((signal, used)) void __vector() {
-      _pvt::timer_mux_asm<Index, comparator_name>::emit();
-      // Must use tc_comp::top instead of tc::value because by now value has already been reset to 0.
+   much time elapsed since it started running, for improved precision. */
+   void interrupt() {
+      // Must use tc_comp::top instead of timer.value because by now value has already been reset to 0.
       timer_ticks curr_ticks = tc_comp::top, next_ticks = max_timer_ticks;
       bool any_active = false;
       for (auto & delay : delays) {
@@ -263,21 +255,36 @@ private:
       if (any_active) {
          // Reset the timer, and keep the interrupt enabled.
          tc_comp::top = next_ticks;
-         tc::value = 0;
+         timer.value = 0;
       } else {
          TIMSK.clear_bit(tc_comp::interrupt_enable_bit);
       }
    }
 
+   template <typename Ret = uint16_t>
+   static constexpr Ret milliscaled_ticks(
+      chrono::milliseconds delay, uint16_t prescaler, uint16_t milliscaler
+   ) {
+      return static_cast<Ret>(delay.count()) * static_cast<Ret>(
+         int_round_div(int_round_div(frequency, prescaler), milliscaler).count()
+      );
+   }
+
+   //! Interrupt vector. It has a weird name to work around g++’s name check for interrupt vectors.
+   static __attribute__((signal, used)) void __vector() {
+      _pvt::timer_mux_asm<Index, comparator_name>::emit();
+      static_this->interrupt();
+   }
+
 private:
-   /* Fixed-size array of delays. This becomes an alias for delays_bytes via asm, so g++ doesn’t generate
-   constructor code for it. */
-   static delay delays[5];
-   /* Storage for delays. */
-   static char delays_bytes[sizeof(delays)];
+   timer_counter_t timer;
+   // Fixed-size array of delays.
+   delay_t delays[5];
+   // Used to find *this from __vector().
+   static timer_mux * static_this;
 };
 
 template <uint8_t Index>
-__attribute__((used)) char timer_mux<Index>::delays_bytes[sizeof(delays)];
+__attribute__((used)) timer_mux<Index> * timer_mux<Index>::static_this;
 
 } //namespace rawr

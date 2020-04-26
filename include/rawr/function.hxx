@@ -197,4 +197,9 @@ private:
    uint8_t impl_storage[RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE];
 };
 
+/*template <typename L>
+inline auto make_function(L lambda) {
+   return function<decltype(&L::operator())>(lambda);
+}*/
+
 } //namespace rawr

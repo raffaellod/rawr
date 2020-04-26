@@ -16,7 +16,6 @@ more details.
 
 #include <rawr/hw/io.hxx>
 #include <rawr/misc.hxx>
-#include <rawr/static_constructor.hxx>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -228,17 +227,8 @@ struct io_port_pin {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 namespace rawr { namespace hw {
-
-/*! Generates initialization code for the specified I/O port bit as a binary (“digital”) output.
-
-The extra argument allows to provide specializations (below) that are effectively full, but are actually
-partial due to the extra template argument, and therefore won’t be instantiated immediately on declaration. */
-template <char Port, uint8_t Bit, bool Value, typename = void>
-struct io_port_bit_output_setup {
-   // Check for just any value known to be false.
-   static_assert(!Port, "the selected MCU does not seem to have a pin mapped to this port/bit combination");
-};
 
 /*! Generates initialization code for the specified I/O port PCINT.
 
@@ -311,27 +301,6 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
          /* Default for DDRxn is 0, so we don’t need to set that. */ \
          io_port_::data.set_bit(bit); \
          io_port_::pcint_mask.set_bit(bit); \
-      RAWR_STATIC_CONSTRUCTOR_END() \
-   }; \
-   \
-   template <typename V> \
-   struct io_port_bit_output_setup<port_ascii, bit, false /*value*/, V> { \
-   private: \
-      RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw24io_port_bit_output_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb0EvE") \
-         typedef io_port<port_ascii> io_port_; \
-         /* Default for PORTxn is 0, so we don’t need to set that. */ \
-         io_port_::data_direction.set_bit(bit); \
-      RAWR_STATIC_CONSTRUCTOR_END() \
-   }; \
-   \
-   template <typename V> \
-   struct io_port_bit_output_setup<port_ascii, bit, true /*value*/, V> { \
-   private: \
-      RAWR_STATIC_CONSTRUCTOR_BEGIN("_ZN4rawr2hw24io_port_bit_output_setupILc" RAWR_TOSTRING(port_ascii) "ELh" RAWR_TOSTRING(bit) "ELb1EvE") \
-         typedef io_port<port_ascii> io_port_; \
-         /* Set in this order per Atmel recommendation. */ \
-         io_port_::data.set_bit(bit); \
-         io_port_::data_direction.set_bit(bit); \
       RAWR_STATIC_CONSTRUCTOR_END() \
    };
 #ifdef PORTA
@@ -446,3 +415,4 @@ the same port/bit can be instantiated, by defining a unique symbol or something.
 #undef _RAWR_SPECIALIZE_IO_PORT_PCINT_SETUP
 
 }} //namespace rawr::hw
+#endif

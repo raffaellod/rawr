@@ -18,48 +18,28 @@ more details.
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace rawr { namespace hw { namespace _pvt {
+namespace rawr { namespace hw {
 
-template <char Port, uint8_t Bit, int InitialValue>
-class binary_output_pin_initializer;
-
+//! Configures an I/O port’s pin as output.
 template <char Port, uint8_t Bit>
-class binary_output_pin_initializer<Port, Bit, -1> {
+class binary_output_pin {
 private:
    typedef io_port<Port> io_port_;
 
 public:
-   static void setup(bool value = false) {
+   binary_output_pin(bool value = false) {
+      // Default for PORTxn is 0, so we only need to do this if value is true (1).
       if (value) {
-         io_port_::data.set_bit(Bit);
-      } else {
-         io_port_::data.clear_bit(Bit);
+         set(value);
       }
       io_port_::data_direction.set_bit(Bit);
    }
-};
 
-template <char Port, uint8_t Bit>
-class binary_output_pin_initializer<Port, Bit, true> : private io_port_bit_output_setup<Port, Bit, true> {
-};
+   binary_output_pin(binary_output_pin const &) = delete;
 
-template <char Port, uint8_t Bit>
-class binary_output_pin_initializer<Port, Bit, false> : private io_port_bit_output_setup<Port, Bit, false> {
-};
+   binary_output_pin & operator=(binary_output_pin const &) = delete;
 
-}}} //namespace rawr::hw::_pvt
-
-namespace rawr { namespace hw {
-
-/*! Configures an I/O port’s pin as output, optionally pre-setting its state to the value provided via the
-third template argument. */
-template <char Port, uint8_t Bit, int InitialValue = -1>
-class binary_output_pin : public _pvt::binary_output_pin_initializer<Port, Bit, InitialValue> {
-private:
-   typedef io_port<Port> io_port_;
-
-public:
-   static void set(bool value = true) {
+   void set(bool value = true) {
       if (value) {
          io_port_::data.set_bit(Bit);
       } else {
@@ -67,11 +47,11 @@ public:
       }
    }
 
-   static void clear() {
+   void clear() {
       set(false);
    }
 
-   static void toggle() {
+   void toggle() {
       io_port_::data.toggle_bit(Bit);
    }
 };

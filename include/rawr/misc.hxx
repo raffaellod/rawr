@@ -47,6 +47,50 @@ more details.
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// Placement new and delete (C++11 § 18.6.1.3 “Placement forms”).
+inline void * operator new(decltype(sizeof 0), void * p) {
+   return p;
+}
+
+inline void * operator new[](decltype(sizeof 0), void * p) {
+   return p;
+}
+
+inline void operator delete(void *, void *) {
+}
+
+inline void operator delete[](void *, void *) {
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace rawr {
+
+//! Defines a member named type as T, if and only if test == true (C++11 § 20.9.7.6 “Other transformations”).
+template <bool Test, typename T = void>
+struct enable_if {
+};
+template <typename T>
+struct enable_if<true, T> {
+   typedef T type;
+};
+
+} //namespace rawr
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace rawr {
+
+//! Defines a member named type as T.
+template <typename T>
+struct identity {
+   typedef T type;
+};
+
+} //namespace rawr
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 namespace rawr {
 
 //! Removes const and volatile qualifiers from a type (C++11 § 20.9.7.1 “Const-volatile modifications”).
@@ -93,6 +137,52 @@ struct remove_reference<T &&> {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace rawr {
+
+/*! Defined as _std::true_type if T is an l-value reference type, or _std::false_type otherwise (C++11 §
+20.9.4.1 “Primary type categories”). */
+template <typename T>
+struct is_lvalue_reference { static constexpr auto value{false}; };
+template <typename T>
+struct is_lvalue_reference<T &> { static constexpr auto value{true}; };
+
+} //namespace rawr
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace rawr {
+
+/*! Allows a method to accept an argument of any reference type, while declaring only an r-value reference
+(C++11 § 20.2.3 “forward/move helpers”). N2835-compliant.
+
+@param t
+   Source object.
+@return
+   R-value reference to t.
+*/
+// Forward r-values as r-values.
+template <typename T>
+inline typename enable_if<!is_lvalue_reference<T>::value, T &&>::type forward(
+   typename identity<T>::type && t
+) {
+   return static_cast<T &&>(t);
+}
+// Forward l-values as l-values.
+template <typename T>
+inline typename enable_if<is_lvalue_reference<T>::value, T>::type forward(typename identity<T>::type t) {
+   return t;
+}
+// Forward l-values as r-values.
+template <typename T>
+inline typename enable_if<!is_lvalue_reference<T>::value, T &&>::type forward(
+   typename identity<T>::type & t
+) {
+   return static_cast<T &&>(t);
+}
+// Prevent forwarding r-values as l-values.
+template <typename T>
+inline typename enable_if<is_lvalue_reference<T>::value, T>::type forward(
+   typename remove_reference<T>::type && t
+) = delete;
 
 /*! Converts a value into an r-value reference, enabling move semantics on the argument (C++11 § 20.2.3
 “forward/move helpers”).
@@ -165,6 +255,15 @@ template <typename T1, typename T2>
 inline constexpr T1 int_round_div(T1 dividend, T2 divisor) {
    static_assert(sizeof(T1) >= sizeof(T2), "unsupported operand sizes");
    return (dividend + divisor / 2) / divisor;
+}
+
+template <unsigned Size>
+inline void trivial_copy(void const * src_v, void * dst_v) {
+   auto dst{static_cast<uint8_t *>(dst_v)}, dst_end{dst + Size};
+   auto src{static_cast<uint8_t const *>(src_v)};
+   while (dst != dst_end) {
+      *dst++ = *src++;
+   }
 }
 
 } //namespace rawr

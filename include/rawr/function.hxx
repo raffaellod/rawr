@@ -21,124 +21,180 @@ more details.
 
 namespace rawr {
 
-// Look-alike of std::function, with support for binding to “this” but not to arguments.
+#ifndef RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE
+   // This may be overridden, at the cost of enlarging sizeof(rawr::function) for the entire binary.
+   #define RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE 6
+#endif
+
+// Equivalent to std::function.
 template <typename F>
 class function;
 
 template <typename Ret, typename... Args>
 class function<Ret (Args...)> {
 private:
-   typedef Ret (* nonmember_target_fn)(Args...);
-   template <typename T>
-   using member_target_fn = Ret (T::*)(Args...);
+   struct impl {
+      /* Note the lack of a virtual destructor: using one pulls in operator delete(void *, size_t), which we
+      don’t want to have to declare because there’s no implementation.
+      Instead, we have a destruct() virtual method that is called before the object is considered gone.
+      Aside from avoiding the annoying warnings about operator delete needing overloads for completeness’
+      sake, this approach also saves TWO Flash bytes.
 
-   union target_t {
-      nonmember_target_fn func;
-      void * obj;
+      For the record, these alternative approaches were attempted as well (building the blink example as a
+      reference):
+       • no virtuals, using a struct to mimic the vtable you see here: that ended up costing 20 more Flash
+         bytes;
+       • no virtuals, using a static function to mimic the vtable you see here: while that avoided pulling in
+         the __do_copy_data function, it ended up costing 90 more Flash bytes than this approach.
 
-      constexpr target_t() :
-         obj{nullptr} {
+      It’s nice knowing that using a compiler-provided facility results in the smallest code size. */
+
+      virtual Ret call(Args...) const = 0;
+
+      virtual void copy(void * dst_storage) const {
+         trivial_copy<sizeof impl_storage>(this, dst_storage);
       }
 
-      constexpr target_t(nonmember_target_fn func_) :
-         func{func_} {
+      virtual void destruct() {
+         // No-op.
       }
 
-      constexpr target_t(void * obj_) :
-         obj{obj_} {
+      virtual void move(void * dst_storage) {
+         trivial_copy<sizeof impl_storage>(this, dst_storage);
       }
    };
 
-   static Ret nonmember_caller_impl(target_t const * target_, Args... args) {
-      return (*target_->func)(args...);
-   }
-
-   template <typename T, member_target_fn<T> M>
-   struct this_caller_impl {
-      static Ret call(target_t const * target_, Args... args) {
-         return (static_cast<T *>(target_->obj)->*M)(args...);
+   template <typename L>
+   struct lambda_impl : impl {
+      explicit lambda_impl(L lambda_) :
+         lambda{forward<L>(lambda_)} {
       }
-   };
 
-public:
-   template <typename T, member_target_fn<T> M>
-   struct bind_stage2 {
-      T * obj;
-   };
-
-   template <typename T>
-   struct bind_stage1 {
-      T * obj;
-
-      template <member_target_fn<T> M>
-      constexpr function to() {
-         return bind_stage2<T, M>{obj};
+      virtual Ret call(Args... args) const override {
+         return lambda(args...);
       }
+
+      virtual void copy(void * dst_storage) const override {
+         if (__is_trivially_constructible(L, L const &)) {
+            impl::copy(dst_storage);
+         } else {
+            new(dst_storage) lambda_impl{lambda};
+         }
+      }
+
+      virtual void destruct() {
+         if (__has_trivial_destructor(L)) {
+            impl::destruct();
+         } else {
+            lambda.~L();
+         }
+      }
+
+      virtual void move(void * dst_storage) override {
+         if (__is_trivially_constructible(L, L &&)) {
+            impl::move(dst_storage);
+         } else {
+            new(dst_storage) lambda_impl{rawr::move(lambda)};
+         }
+      }
+
+      L lambda;
    };
 
 public:
    constexpr function() :
-      caller{nullptr} {
+      set{false} {
    }
 
-   /* target_ is T instead of Ret (*)(Args...) so it can match a capture-less lambda, which can then be
-   implicitly converted to Ret (*)(Args...). */
-   template <typename T>
-   /*implicit*/ constexpr function(T target_) :
-      caller{&nonmember_caller_impl},
-      target{target_} {
+   function(function && src) :
+      set{src.set} {
+      if (set) {
+         src.impl()->move(impl_storage);
+         src.impl()->destruct();
+         src.set = false;
+      }
    }
 
-   constexpr function(function const & src) :
-      caller{src.caller},
-      target{src.target} {
+   function(function const & src) :
+      set{src.set} {
+      if (set) {
+         src.impl()->copy(impl_storage);
+      }
    }
 
-   function & operator=(decltype(nullptr)) {
-      caller = nullptr;
+   template <typename L>
+   /*implicit*/ constexpr function(L lambda) :
+      set{true} {
+      static_assert(sizeof(lambda_impl<L>) <= sizeof impl_storage, "cannot use lambdas of size > sizeof impl_storage - vtable cost");
+      new(impl_storage) lambda_impl<L>{forward<L>(lambda)};
+   }
+
+   ~function() {
+      if (set) {
+         impl()->destruct();
+      }
+   }
+
+   function & operator=(function && src) {
+      if (set) {
+         impl()->destruct();
+      }
+      set = src.set;
+      if (set) {
+         src.impl()->move(impl_storage);
+         src.impl()->destruct();
+         src.set = false;
+      }
       return *this;
    }
 
    function & operator=(function const & src) {
-      caller = src.caller;
-      target = src.target;
+      if (set) {
+         impl()->destruct();
+      }
+      set = src.set;
+      if (set) {
+         src.impl()->copy(impl_storage);
+      }
+      return *this;
+   }
+
+   function & operator=(decltype(nullptr)) {
+      if (set) {
+         impl()->destruct();
+         set = false;
+      }
       return *this;
    }
 
    explicit constexpr operator bool() const {
-      return caller != nullptr;
+      return set;
    }
 
    constexpr bool operator==(decltype(nullptr)) const {
-      return caller == nullptr;
+      return !set;
    }
 
    constexpr bool operator!=(decltype(nullptr)) const {
-      return !operator==(nullptr);
+      return set;
    }
 
    Ret operator()(Args... args) const {
-      if (!caller) {
-         abort();
-      }
-      return caller(&target, args...);
-   }
-
-   template <typename T>
-   static constexpr bind_stage1<T> bind(T * target_) {
-      return bind_stage1<T>{target_};
+      return impl()->call(args...);
    }
 
 private:
-   template <typename T, member_target_fn<T> M>
-   explicit constexpr function(bind_stage2<T, M> bound) :
-      caller{&this_caller_impl<T, M>::call},
-      target{bound.obj} {
+   class impl * impl() {
+      return static_cast<class impl *>(static_cast<void *>(impl_storage));
+   }
+
+   class impl const * impl() const {
+      return static_cast<class impl const *>(static_cast<void const *>(impl_storage));
    }
 
 private:
-   Ret (* caller)(target_t const *, Args...);
-   target_t target;
+   bool set;
+   uint8_t impl_storage[RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE];
 };
 
 } //namespace rawr

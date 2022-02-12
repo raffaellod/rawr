@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017-2020 Raffaello D. Di Napoli
+Copyright 2017-2020, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -47,6 +47,7 @@ struct io_mem_reg {
       return *this;
    }
 
+   // TODO: remove this implicit static_cast.
    template <typename R>
    io_mem_reg const & operator|=(R r) {
       ref() |= static_cast<T>(r);
@@ -57,6 +58,7 @@ struct io_mem_reg {
       return ref();
    }
 
+   // TODO: remove this implicit static_cast.
    template <typename R>
    T operator&(R r) const {
       return ref() & static_cast<T>(r);
@@ -122,12 +124,34 @@ struct io_mem_reg {
    #define TIMSK TIMSK0
 #endif
 
+#if !defined(TIMER0_COMPA_vect) && defined(TIMER0_COMP_vect)
+   #define TIMER0_COMPA_vect TIMER0_COMP_vect
+#endif
 #if !defined(TIMER0_COMPA_vect) && defined(TIM0_COMPA_vect)
    #define TIMER0_COMPA_vect TIM0_COMPA_vect
 #endif
-
 #if !defined(TIMER0_COMPB_vect) && defined(TIM0_COMPB_vect)
    #define TIMER0_COMPB_vect TIM0_COMPB_vect
+#endif
+
+#if !defined(TIMER1_COMPA_vect) && defined(TIMER1_COMP_vect)
+   #define TIMER1_COMPA_vect TIMER1_COMP_vect
+#endif
+#if !defined(TIMER1_COMPA_vect) && defined(TIM1_COMPA_vect)
+   #define TIMER1_COMPA_vect TIM1_COMPA_vect
+#endif
+#if !defined(TIMER1_COMPB_vect) && defined(TIM1_COMPB_vect)
+   #define TIMER1_COMPB_vect TIM1_COMPB_vect
+#endif
+
+#if !defined(TIMER2_COMPA_vect) && defined(TIMER2_COMP_vect)
+   #define TIMER2_COMPA_vect TIMER2_COMP_vect
+#endif
+#if !defined(TIMER2_COMPA_vect) && defined(TIM2_COMPA_vect)
+   #define TIMER2_COMPA_vect TIM2_COMPA_vect
+#endif
+#if !defined(TIMER2_COMPB_vect) && defined(TIM2_COMPB_vect)
+   #define TIMER2_COMPB_vect TIM2_COMPB_vect
 #endif
 
 #if !defined(WDTCR) && defined(WDTCSR)

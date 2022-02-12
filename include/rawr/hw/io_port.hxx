@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017, 2020 Raffaello D. Di Napoli
+Copyright 2017, 2020, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -21,8 +21,8 @@ more details.
 
 namespace rawr { namespace hw { namespace _pvt {
 
-/*! This struct, combined with port_to_pcint_irq, allows to map from I/O port names (“A”, “B”, …) to PCINT IRQ
-indices. */
+/*! This struct, combined with io_port_pcint_members, allows to map from I/O port names (“A”, “B”, …) to PCINT
+IRQ indices, and inject PCINT-related members into rawr::hw::io_port. */
 template <uint8_t Irq>
 struct irq_to_pcint_index;
 
@@ -44,30 +44,6 @@ struct irq_to_pcint_index;
    _RAWR_SPECIALIZE_IRQ_TO_PCINT_INDEX(PCINT3_vect_num, 3)
 #endif
 #undef _RAWR_SPECIALIZE_IRQ_TO_PCINT_INDEX
-
-/*! This struct, combined with irq_to_pcint_index, allows to map from I/O port names (“A”, “B”, …) to PCINT
-IRQ indices. */
-template <char Port>
-struct port_to_pcint_irq;
-
-#define _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ(port, irq) \
-   template <> \
-   struct port_to_pcint_irq<port> { \
-      static constexpr uint8_t value = irq; \
-   };
-#ifdef PCINT_A_vect_num
-   _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ('A', PCINT_A_vect_num)
-#endif
-#ifdef PCINT_B_vect_num
-   _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ('B', PCINT_B_vect_num)
-#endif
-#ifdef PCINT_C_vect_num
-   _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ('C', PCINT_C_vect_num)
-#endif
-#ifdef PCINT_D_vect_num
-   _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ('D', PCINT_D_vect_num)
-#endif
-#undef _RAWR_SPECIALIZE_PORT_TO_PCINT_IRQ
 
 //! Provides access to PCINT registers and bits by PCINT IRQ index.
 template <uint8_t Index>
@@ -94,6 +70,47 @@ struct port_pcint;
 #endif
 #undef _RAWR_SPECIALIZE_PORT_PCINT
 
+//! PCINT-related members injected into rawr::hw::io_port.
+template <char Port>
+struct io_port_pcint_members {
+   //! Indicates whether PCINT for the I/O port is supported.
+   static constexpr bool has_pcint{false};
+};
+
+#define _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS(port, irq) \
+   template <> \
+   struct io_port_pcint_members<port> : io_port_pcint<irq_to_pcint_index<irq>::value> { \
+      static constexpr bool has_pcint{true}; \
+   };
+#ifdef PCINT_A_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('A', PCINT_A_vect_num)
+#endif
+#ifdef PCINT_B_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('B', PCINT_B_vect_num)
+#endif
+#ifdef PCINT_C_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('C', PCINT_C_vect_num)
+#endif
+#ifdef PCINT_D_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('D', PCINT_D_vect_num)
+#endif
+#ifdef PCINT_E_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('E', PCINT_E_vect_num)
+#endif
+#ifdef PCINT_F_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('F', PCINT_F_vect_num)
+#endif
+#ifdef PCINT_G_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('G', PCINT_G_vect_num)
+#endif
+#ifdef PCINT_H_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('H', PCINT_H_vect_num)
+#endif
+#ifdef PCINT_J_vect_num
+   _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS('J', PCINT_J_vect_num)
+#endif
+#undef _RAWR_SPECIALIZE_IO_PORT_PCINT_MEMBERS
+
 }}} //namespace rawr::hw::_pvt
 
 namespace rawr { namespace hw {
@@ -114,8 +131,7 @@ struct io_port_pin {
 
 #define _RAWR_SPECIALIZE_IO_PORT(port_quoted, port_unquoted, defined_pins) \
    template <> \
-   struct io_port<port_quoted> : \
-      public _pvt::port_pcint<_pvt::irq_to_pcint_index<_pvt::port_to_pcint_irq<port_quoted>::value>::value> { \
+   struct io_port<port_quoted> : _pvt::io_port_pcint_members<port_quoted> { \
       static constexpr char name = port_quoted; \
       static constexpr decltype(RAWR_CPP_CAT2(DDR, port_unquoted)) data_direction{}; \
       static constexpr decltype(RAWR_CPP_CAT2(PORT, port_unquoted)) data{}; \
@@ -219,6 +235,121 @@ struct io_port_pin {
       #error "PORTD is defined, but no PORTDn constants are?!"
    #endif
    _RAWR_SPECIALIZE_IO_PORT('D', D, _RAWR_DEFINED_IO_PORT_PINS)
+   #undef _RAWR_DEFINED_IO_PORT_PINS
+#endif
+#ifdef PORTE
+   #if defined(PORTE7)
+      #define _RAWR_DEFINED_IO_PORT_PINS 8
+   #elif defined(PORTE6)
+      #define _RAWR_DEFINED_IO_PORT_PINS 7
+   #elif defined(PORTE5)
+      #define _RAWR_DEFINED_IO_PORT_PINS 6
+   #elif defined(PORTE4)
+      #define _RAWR_DEFINED_IO_PORT_PINS 5
+   #elif defined(PORTE3)
+      #define _RAWR_DEFINED_IO_PORT_PINS 4
+   #elif defined(PORTE2)
+      #define _RAWR_DEFINED_IO_PORT_PINS 3
+   #elif defined(PORTE1)
+      #define _RAWR_DEFINED_IO_PORT_PINS 2
+   #elif defined(PORTE0)
+      #define _RAWR_DEFINED_IO_PORT_PINS 1
+   #else
+      #error "PORTE is defined, but no PORTEn constants are?!"
+   #endif
+   _RAWR_SPECIALIZE_IO_PORT('E', E, _RAWR_DEFINED_IO_PORT_PINS)
+   #undef _RAWR_DEFINED_IO_PORT_PINS
+#endif
+#ifdef PORTF
+   #if defined(PORTF7)
+      #define _RAWR_DEFINED_IO_PORT_PINS 8
+   #elif defined(PORTF6)
+      #define _RAWR_DEFINED_IO_PORT_PINS 7
+   #elif defined(PORTF5)
+      #define _RAWR_DEFINED_IO_PORT_PINS 6
+   #elif defined(PORTF4)
+      #define _RAWR_DEFINED_IO_PORT_PINS 5
+   #elif defined(PORTF3)
+      #define _RAWR_DEFINED_IO_PORT_PINS 4
+   #elif defined(PORTF2)
+      #define _RAWR_DEFINED_IO_PORT_PINS 3
+   #elif defined(PORTF1)
+      #define _RAWR_DEFINED_IO_PORT_PINS 2
+   #elif defined(PORTF0)
+      #define _RAWR_DEFINED_IO_PORT_PINS 1
+   #else
+      #error "PORTF is defined, but no PORTFn constants are?!"
+   #endif
+   _RAWR_SPECIALIZE_IO_PORT('F', F, _RAWR_DEFINED_IO_PORT_PINS)
+   #undef _RAWR_DEFINED_IO_PORT_PINS
+#endif
+#ifdef PORTG
+   #if defined(PORTG7)
+      #define _RAWR_DEFINED_IO_PORT_PINS 8
+   #elif defined(PORTG6)
+      #define _RAWR_DEFINED_IO_PORT_PINS 7
+   #elif defined(PORTG5)
+      #define _RAWR_DEFINED_IO_PORT_PINS 6
+   #elif defined(PORTG4)
+      #define _RAWR_DEFINED_IO_PORT_PINS 5
+   #elif defined(PORTG3)
+      #define _RAWR_DEFINED_IO_PORT_PINS 4
+   #elif defined(PORTG2)
+      #define _RAWR_DEFINED_IO_PORT_PINS 3
+   #elif defined(PORTG1)
+      #define _RAWR_DEFINED_IO_PORT_PINS 2
+   #elif defined(PORTG0)
+      #define _RAWR_DEFINED_IO_PORT_PINS 1
+   #else
+      #error "PORTG is defined, but no PORTGn constants are?!"
+   #endif
+   _RAWR_SPECIALIZE_IO_PORT('G', G, _RAWR_DEFINED_IO_PORT_PINS)
+   #undef _RAWR_DEFINED_IO_PORT_PINS
+#endif
+#ifdef PORTH
+   #if defined(PORTH7)
+      #define _RAWR_DEFINED_IO_PORT_PINS 8
+   #elif defined(PORTH6)
+      #define _RAWR_DEFINED_IO_PORT_PINS 7
+   #elif defined(PORTH5)
+      #define _RAWR_DEFINED_IO_PORT_PINS 6
+   #elif defined(PORTH4)
+      #define _RAWR_DEFINED_IO_PORT_PINS 5
+   #elif defined(PORTH3)
+      #define _RAWR_DEFINED_IO_PORT_PINS 4
+   #elif defined(PORTH2)
+      #define _RAWR_DEFINED_IO_PORT_PINS 3
+   #elif defined(PORTH1)
+      #define _RAWR_DEFINED_IO_PORT_PINS 2
+   #elif defined(PORTH0)
+      #define _RAWR_DEFINED_IO_PORT_PINS 1
+   #else
+      #error "PORTH is defined, but no PORTHn constants are?!"
+   #endif
+   _RAWR_SPECIALIZE_IO_PORT('H', H, _RAWR_DEFINED_IO_PORT_PINS)
+   #undef _RAWR_DEFINED_IO_PORT_PINS
+#endif
+#ifdef PORTJ
+   #if defined(PORTJ7)
+      #define _RAWR_DEFINED_IO_PORT_PINS 8
+   #elif defined(PORTJ6)
+      #define _RAWR_DEFINED_IO_PORT_PINS 7
+   #elif defined(PORTJ5)
+      #define _RAWR_DEFINED_IO_PORT_PINS 6
+   #elif defined(PORTJ4)
+      #define _RAWR_DEFINED_IO_PORT_PINS 5
+   #elif defined(PORTJ3)
+      #define _RAWR_DEFINED_IO_PORT_PINS 4
+   #elif defined(PORTJ2)
+      #define _RAWR_DEFINED_IO_PORT_PINS 3
+   #elif defined(PORTJ1)
+      #define _RAWR_DEFINED_IO_PORT_PINS 2
+   #elif defined(PORTJ0)
+      #define _RAWR_DEFINED_IO_PORT_PINS 1
+   #else
+      #error "PORTJ is defined, but no PORTJn constants are?!"
+   #endif
+   _RAWR_SPECIALIZE_IO_PORT('J', J, _RAWR_DEFINED_IO_PORT_PINS)
    #undef _RAWR_DEFINED_IO_PORT_PINS
 #endif
 #undef _RAWR_SPECIALIZE_IO_PORT

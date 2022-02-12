@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -151,7 +151,7 @@ private:
 public:
    timer_mux() {
       static_this = this;
-      timer.control_register_b |= tc_prescaler::control_register_bits;
+      timer.control_registers.set_cs(tc_prescaler::control_register_bits);
    }
 
    delay_control once_or_repeat(

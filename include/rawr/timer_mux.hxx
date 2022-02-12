@@ -14,6 +14,7 @@ more details.
 
 #pragma once
 
+#include <rawr/abort.hxx>
 #include <rawr/alias.hxx>
 #include <rawr/chrono.hxx>
 #include <rawr/function.hxx>

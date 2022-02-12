@@ -21,10 +21,10 @@ more details.
 namespace rawr { namespace hw {
 
 //! Defines control registers for each timer/counter available on the selected MCU.
-template <uint8_t Index>
+template <int Index>
 struct timer_counter_control_registers_raw {
    // Check for just any value known to be false.
-   static_assert(Index == 0xff,
+   static_assert(Index < 0,
       "the selected MCU does not seem to have this timer, or unsupported TCCRnx config for it"
    );
 };
@@ -60,10 +60,10 @@ struct timer_counter_control_registers_raw {
 Not simply a TCCR count, because features may differ from one 2-TCCR timer/counter to another 2-TCCR t/c.
 Instead we just call each feature/bits config a “layout”, so when a novel one needs to be added, we can add a
 new, incompatible TCC registers/bits configuration. */
-template <uint8_t Index>
+template <int Index>
 struct timer_counter_control_registers_layout {
    // Check for just any value known to be false.
-   static_assert(Index == 0xff,
+   static_assert(Index < 0,
       "the selected MCU does not seem to have this timer, or unsupported TCCRnx config for it"
    );
 };
@@ -89,12 +89,12 @@ struct timer_counter_control_registers_layout {
 
 /*! Abstracts access to bits in the TCCRnx registers, so that code may be switched from using one timer to
 another different one, without any (ideally) changes. */
-template <uint8_t Index, uint8_t Mask_cs, int = timer_counter_control_registers_layout<Index>::layout>
+template <int Index, uint8_t Mask_cs, int = timer_counter_control_registers_layout<Index>::layout>
 struct timer_counter_control_registers;
 
 /* TCCR layout 1: one Output Compare Unit, two WGM bits:
    TCCRnA  FOCnA WGMn[0] COMnA[1:0] WGMn[1] CSn[2:0] */
-template <uint8_t Index, uint8_t Mask_cs>
+template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 1> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
       timer_counter_control_registers_raw<Index>::a &= static_cast<uint8_t>(~Mask_cs);
@@ -105,7 +105,7 @@ struct timer_counter_control_registers<Index, Mask_cs, 1> : timer_counter_contro
 /* TCCR layout 2: two Output Compare Units, three WGM bits:
    TCCRnA  COMnA[1:0] COMnB[1:0] - - WGMn[1:0]
    TCCRnB  FOCnA FOCnB - - WGMn[2] CSn[2:0] */
-template <uint8_t Index, uint8_t Mask_cs>
+template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 2> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
       timer_counter_control_registers_raw<Index>::b &= static_cast<uint8_t>(~Mask_cs);
@@ -117,7 +117,7 @@ struct timer_counter_control_registers<Index, Mask_cs, 2> : timer_counter_contro
    TCCRnA  COMnA[1:0] COMnB[1:0] - - WGMn[1:0]
    TCCRnB  ICNCn ICESn - WGMn[3:2] CSn[2:0]
    TCCRnC  FOCnA FOCnB - - - - - - */
-template <uint8_t Index, uint8_t Mask_cs>
+template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 3> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
       timer_counter_control_registers_raw<Index>::b &= static_cast<uint8_t>(~Mask_cs);
@@ -126,10 +126,10 @@ struct timer_counter_control_registers<Index, Mask_cs, 3> : timer_counter_contro
 };
 
 //! Timer/counter abstraction; provides a uniform interface for all timer/counter units on AVR MCUs.
-template <uint8_t Index>
+template <int Index>
 struct timer_counter {
    // Check for just any value known to be false.
-   static_assert(Index == 0xff, "the selected MCU does not seem to have this timer");
+   static_assert(Index < 0, "the selected MCU does not seem to have this timer");
 };
 
 #define _RAWR_SPECIALIZE_TIMER_COUNTER(index) \
@@ -148,7 +148,7 @@ struct timer_counter {
          static_assert(!Comparator, "the selected MCU does not seem to have this timer/comparator combination"); \
       }; \
       \
-      template <uint16_t Prescaler> \
+      template <unsigned Prescaler> \
       struct prescalers { \
          /* Check for just any value known to be false. */ \
          static_assert(!Prescaler, "the selected MCU does not seem to have this timer/prescaler combination"); \

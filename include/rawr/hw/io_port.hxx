@@ -23,13 +23,13 @@ namespace rawr { namespace hw { namespace _pvt {
 
 /*! This struct, combined with io_port_pcint_members, allows to map from I/O port names (“A”, “B”, …) to PCINT
 IRQ indices, and inject PCINT-related members into rawr::hw::io_port. */
-template <uint8_t Irq>
+template <int Irq>
 struct irq_to_pcint_index;
 
 #define _RAWR_SPECIALIZE_IRQ_TO_PCINT_INDEX(irq, index) \
    template <> \
    struct irq_to_pcint_index<irq> { \
-      static constexpr uint8_t value = index; \
+      static constexpr int value = index; \
    };
 #ifdef PCINT0_vect_num
    _RAWR_SPECIALIZE_IRQ_TO_PCINT_INDEX(PCINT0_vect_num, 0)
@@ -46,7 +46,7 @@ struct irq_to_pcint_index;
 #undef _RAWR_SPECIALIZE_IRQ_TO_PCINT_INDEX
 
 //! Provides access to PCINT registers and bits by PCINT IRQ index.
-template <uint8_t Index>
+template <int Index>
 struct port_pcint;
 
 #define _RAWR_SPECIALIZE_PORT_PCINT(index, pcmsk, pcie, pcif) \
@@ -123,7 +123,7 @@ struct io_port {
 };
 
 //! Identifies a pin of an I/O port as a type; used as template argument for other classes.
-template <char Port, uint8_t Pin>
+template <char Port, int Pin>
 struct io_port_pin {
    // Check for just any value known to be false.
    static_assert(!Port, "the selected MCU does not seem to have this port");
@@ -136,10 +136,10 @@ struct io_port_pin {
       static constexpr decltype(RAWR_CPP_CAT2(DDR, port_unquoted)) data_direction{}; \
       static constexpr decltype(RAWR_CPP_CAT2(PORT, port_unquoted)) data{}; \
       static constexpr decltype(RAWR_CPP_CAT2(PIN, port_unquoted)) pins{}; \
-      static constexpr uint8_t bit_size = defined_pins; \
+      static constexpr unsigned bit_size{defined_pins}; \
    }; \
    \
-   template <uint8_t Pin> \
+   template <int Pin> \
    struct io_port_pin<port_quoted, Pin> { \
       static_assert(Pin <= defined_pins, "the selected MCU does not seem to have this port pin"); \
       typedef io_port<port_quoted> port; \
@@ -377,7 +377,7 @@ struct io_port_input_setup {
 The extra argument allows to provide specializations (below) that are effectively full, but are actually
 partial due to the extra template argument, and therefore won’t be instantiated immediately on declaration. */
 
-template <char Port, uint8_t Bit, bool InitialPullup, bool PinChangeInt, typename = void>
+template <char Port, int Bit, bool InitialPullup, bool PinChangeInt, typename = void>
 struct io_port_bit_input_setup {
    // Check for just any value known to be false.
    static_assert(!Port, "the selected MCU does not seem to have a pin mapped to this port/bit combination");

@@ -24,7 +24,7 @@ more details.
 
 namespace rawr { namespace _pvt {
 
-template <uint8_t Index, char Comparator>
+template <int Index, char Comparator>
 struct timer_mux_asm;
 
 #define _RAWR_SPECIALIZE_TIMER_DELAY_ASM_IMPL(index, comparator_ascii, vector, prefix) \
@@ -35,7 +35,7 @@ struct timer_mux_asm;
       } \
    };
 #define _RAWR_SPECIALIZE_TIMER_DELAY_ASM(index, comparator_ascii, vector) \
-   _RAWR_SPECIALIZE_TIMER_DELAY_ASM_IMPL(index, comparator_ascii, vector, "_ZN4rawr9timer_muxILh" RAWR_TOSTRING(index))
+   _RAWR_SPECIALIZE_TIMER_DELAY_ASM_IMPL(index, comparator_ascii, vector, "_ZN4rawr9timer_muxILi" RAWR_TOSTRING(index))
 #ifdef TIMER0_COMPA_vect
    _RAWR_SPECIALIZE_TIMER_DELAY_ASM(0, 65 /*A*/, TIMER0_COMPA_vect)
 #endif
@@ -83,7 +83,7 @@ repeat() method are automatically re-scheduled; those created with once() are no
 The range for delays is 1 millisecond up to min_max_duration (currently 3 seconds); this range is chosen to
 avoid 32-bit math operations while at the same time minimizing the number of interrupts generated (i.e.
 wake-ups from sleep). */
-template <uint8_t Index>
+template <int Index>
 class timer_mux {
 public:
    static constexpr chrono::hertz frequency{F_CPU};
@@ -284,7 +284,7 @@ private:
    static timer_mux * static_this;
 };
 
-template <uint8_t Index>
+template <int Index>
 __attribute__((used)) timer_mux<Index> * timer_mux<Index>::static_this;
 
 } //namespace rawr

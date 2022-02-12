@@ -42,6 +42,9 @@ that they can be defined within a class declaration, and they won’t allocate a
 storage is an I/O memory register). */
 template <unsigned Addr, typename T>
 struct io_mem_reg {
+   //! Allows to extract the type; mostly used to get its size.
+   using type = T;
+
    io_mem_reg const & operator=(T src) const {
       ref() = src;
       return *this;

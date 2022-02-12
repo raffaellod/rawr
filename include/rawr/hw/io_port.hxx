@@ -47,28 +47,28 @@ struct irq_to_pcint_index;
 
 //! Provides access to PCINT registers and bits by PCINT IRQ index.
 template <int Index>
-struct port_pcint;
+struct io_port_pcint;
 
-#define _RAWR_SPECIALIZE_PORT_PCINT(index, pcmsk, pcie, pcif) \
+#define _RAWR_SPECIALIZE_IO_PORT_PCINT(index, pcmsk, pcie, pcif) \
    template <> \
-   struct port_pcint<index> { \
+   struct io_port_pcint<index> { \
       static constexpr uint8_t pcint_enable_bit = pcie; \
       static constexpr uint8_t pcint_flag_bit = pcif; \
       static constexpr decltype(pcmsk) pcint_mask{}; \
    };
 #ifdef PCIE0
-   _RAWR_SPECIALIZE_PORT_PCINT(0, PCMSK0, PCIE0, PCIF0)
+   _RAWR_SPECIALIZE_IO_PORT_PCINT(0, PCMSK0, PCIE0, PCIF0)
 #endif
 #ifdef PCIE1
-   _RAWR_SPECIALIZE_PORT_PCINT(1, PCMSK1, PCIE1, PCIF1)
+   _RAWR_SPECIALIZE_IO_PORT_PCINT(1, PCMSK1, PCIE1, PCIF1)
 #endif
 #ifdef PCIE2
-   _RAWR_SPECIALIZE_PORT_PCINT(2, PCMSK2, PCIE2, PCIF2)
+   _RAWR_SPECIALIZE_IO_PORT_PCINT(2, PCMSK2, PCIE2, PCIF2)
 #endif
 #ifdef PCIE3
-   _RAWR_SPECIALIZE_PORT_PCINT(3, PCMSK3, PCIE3, PCIF3)
+   _RAWR_SPECIALIZE_IO_PORT_PCINT(3, PCMSK3, PCIE3, PCIF3)
 #endif
-#undef _RAWR_SPECIALIZE_PORT_PCINT
+#undef _RAWR_SPECIALIZE_IO_PORT_PCINT
 
 //! PCINT-related members injected into rawr::hw::io_port.
 template <char Port>

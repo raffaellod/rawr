@@ -97,8 +97,8 @@ struct timer_counter_control_registers;
 template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 1> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
-      timer_counter_control_registers_raw<Index>::a &= static_cast<uint8_t>(~Mask_cs);
-      timer_counter_control_registers_raw<Index>::a |= cs;
+      timer_counter_control_registers_raw<Index>::a =
+         (timer_counter_control_registers_raw<Index>::a & static_cast<uint8_t>(~Mask_cs)) | cs;
    }
 };
 
@@ -108,8 +108,8 @@ struct timer_counter_control_registers<Index, Mask_cs, 1> : timer_counter_contro
 template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 2> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
-      timer_counter_control_registers_raw<Index>::b &= static_cast<uint8_t>(~Mask_cs);
-      timer_counter_control_registers_raw<Index>::b |= cs;
+      timer_counter_control_registers_raw<Index>::b =
+         (timer_counter_control_registers_raw<Index>::b & static_cast<uint8_t>(~Mask_cs)) | cs;
    }
 };
 
@@ -120,8 +120,8 @@ struct timer_counter_control_registers<Index, Mask_cs, 2> : timer_counter_contro
 template <int Index, uint8_t Mask_cs>
 struct timer_counter_control_registers<Index, Mask_cs, 3> : timer_counter_control_registers_raw<Index> {
    static void set_cs(uint8_t cs) {
-      timer_counter_control_registers_raw<Index>::b &= static_cast<uint8_t>(~Mask_cs);
-      timer_counter_control_registers_raw<Index>::b |= cs;
+      timer_counter_control_registers_raw<Index>::b =
+         (timer_counter_control_registers_raw<Index>::b & static_cast<uint8_t>(~Mask_cs)) | cs;
    }
 };
 

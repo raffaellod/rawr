@@ -50,21 +50,8 @@ struct io_mem_reg {
       return *this;
    }
 
-   // TODO: remove this implicit static_cast.
-   template <typename R>
-   io_mem_reg const & operator|=(R r) {
-      ref() |= static_cast<T>(r);
-      return *this;
-   }
-
    operator T volatile &() const {
       return ref();
-   }
-
-   // TODO: remove this implicit static_cast.
-   template <typename R>
-   T operator&(R r) const {
-      return ref() & static_cast<T>(r);
    }
 
    constexpr T volatile & ref() const {

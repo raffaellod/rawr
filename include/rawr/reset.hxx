@@ -25,7 +25,7 @@ inline __attribute__((naked)) void reset() {
    __asm__ __volatile__(
       "\r\n" "cli"
    );
-   WDTCR |= _BV(WDCE) | _BV(WDE);
+   WDTCR = WDTCR | _BV(WDCE) | _BV(WDE);
    // Set prescaler to 0000, which is the shortest period.
    WDTCR = _BV(WDCE);
    // Sleep with interrupts disabled till reset occurs.

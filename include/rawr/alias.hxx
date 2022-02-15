@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -16,6 +16,6 @@ more details.
 
 #define RAWR_ALIAS(mangled_alias, mangled_original) \
    __asm__ __volatile__ ( \
-      "\n\t" ".global " mangled_alias \
+      "\n\t" ".weak " mangled_alias \
       "\n"   mangled_alias " = " mangled_original \
    )

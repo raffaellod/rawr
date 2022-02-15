@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -81,7 +81,7 @@ private:
          }
       }
 
-      virtual void destruct() {
+      virtual void destruct() override {
          if (__has_trivial_destructor(L)) {
             impl::destruct();
          } else {
@@ -135,25 +135,29 @@ public:
    }
 
    function & operator=(function && src) {
-      if (set) {
-         impl()->destruct();
-      }
-      set = src.set;
-      if (set) {
-         src.impl()->move(impl_storage);
-         src.impl()->destruct();
-         src.set = false;
+      if (&src != this) {
+         if (set) {
+            impl()->destruct();
+         }
+         set = src.set;
+         if (set) {
+            src.impl()->move(impl_storage);
+            src.impl()->destruct();
+            src.set = false;
+         }
       }
       return *this;
    }
 
    function & operator=(function const & src) {
-      if (set) {
-         impl()->destruct();
-      }
-      set = src.set;
-      if (set) {
-         src.impl()->copy(impl_storage);
+      if (&src != this) {
+         if (set) {
+            impl()->destruct();
+         }
+         set = src.set;
+         if (set) {
+            src.impl()->copy(impl_storage);
+         }
       }
       return *this;
    }
@@ -183,12 +187,12 @@ public:
    }
 
 private:
-   class impl * impl() {
-      return static_cast<class impl *>(static_cast<void *>(impl_storage));
+   struct impl * impl() {
+      return static_cast<struct impl *>(static_cast<void *>(impl_storage));
    }
 
-   class impl const * impl() const {
-      return static_cast<class impl const *>(static_cast<void const *>(impl_storage));
+   struct impl const * impl() const {
+      return static_cast<struct impl const *>(static_cast<void const *>(impl_storage));
    }
 
 private:

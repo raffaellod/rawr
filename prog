@@ -65,27 +65,35 @@ bin_file="${bin_dir}/${prog_name}"
 hex_file="${hex_dir}/${prog_name}.hex"
 
 # Overridables.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wall"                  # Enable more warnings.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wextra"                # Enable extra warnings not enabled by -Wall.
-WARN_CFLAGS="${WARN_CFLAGS:-} -pedantic"              # Issue all the warnings demanded by strict ISO C++.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wconversion"           # Warn for implicit conversions that may alter a value.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wlogical-op"           # Warn about suspicious uses of logical operators in
-                                                      # expressions.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wmissing-declarations" # Warn if a global function is defined without a
-                                                      # previous declaration.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wpacked"               # Warn if a struct has “packed” attribute but that
-                                                      # has no effect on its layout or size.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wshadow"               # Warn when a local symbol shadows another symbol.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wsign-conversion"      # Warn for implicit conversions that may change the sign
-                                                      # of an integer value.
-WARN_CFLAGS="${WARN_CFLAGS:-} -Wundef"                # Warn if an undefined identifier is evaluated in “#if”.
+WARN_CFLAGS="${WARN_CFLAGS:-} -Wall"                # Enable more warnings.
+WARN_CFLAGS="${WARN_CFLAGS} -Wextra"                # Enable extra warnings not enabled by -Wall.
+WARN_CFLAGS="${WARN_CFLAGS} -pedantic"              # Issue all the warnings demanded by strict ISO C++.
+WARN_CFLAGS="${WARN_CFLAGS} -Wconversion"           # Warn for implicit conversions that may alter a value.
+if [ -z "${use_clang}" ]; then
+   WARN_CFLAGS="${WARN_CFLAGS} -Wlogical-op"        # Warn about suspicious uses of logical operators in
+fi                                                  # expressions.
+WARN_CFLAGS="${WARN_CFLAGS} -Wmissing-declarations" # Warn if a global function is defined without a
+                                                    # previous declaration.
+WARN_CFLAGS="${WARN_CFLAGS} -Wpacked"               # Warn if a struct has “packed” attribute but that
+                                                    # has no effect on its layout or size.
+WARN_CFLAGS="${WARN_CFLAGS} -Wshadow"               # Warn when a local symbol shadows another symbol.
+WARN_CFLAGS="${WARN_CFLAGS} -Wsign-conversion"      # Warn for implicit conversions that may change the sign
+                                                    # of an integer value.
+WARN_CFLAGS="${WARN_CFLAGS} -Wundef"                # Warn if an undefined identifier is evaluated in “#if”.
 CFLAGS="-I${rawr_dir}/include ${CFLAGS}"
-CFLAGS="-fno-fat-lto-objects -g0 -Os ${WARN_CFLAGS} ${CFLAGS}"
-CFLAGS="-std=c++17 -fvisibility=internal ${CFLAGS}"
+CFLAGS="-g0 -Os ${WARN_CFLAGS} ${CFLAGS}"
+if [ -z "${use_clang}" ]; then
+   CFLAGS="-fno-fat-lto-objects ${CFLAGS}"
+fi
+CFLAGS="-std=c++20 -fvisibility=internal ${CFLAGS}"
 # Change to false to link against avr-libc’s startup files for maximum compatibility.
 if true; then
    CFLAGS="-DRAWR_STARTUP ${CFLAGS}"
-   LDFLAGS="-nostartfiles ${LDFLAGS}"
+   if [ -n "${use_clang}" ]; then
+      LDFLAGS="-nostdlib ${LDFLAGS}"
+   else
+      LDFLAGS="-nostartfiles ${LDFLAGS}"
+   fi
 fi
 unset WARN_CFLAGS
 
@@ -121,16 +129,16 @@ older_than_any() {
 }
 
 build() {
-   local gcc_mcu=$(
-      echo ${src_mcu_def} |
-      sed -ne '
-         p
-      '
-   )
-   CFLAGS="-mmcu=${gcc_mcu} ${CFLAGS}"
+   local CC
+   CFLAGS="-mmcu=${src_mcu_def} ${CFLAGS}"
 
    mkdir -p "${asm_dir}" "${int_dir}"
 
+   if [ -n "${use_clang}" ]; then
+      CC='clang++ --target=avr'
+   else
+      CC='avr-g++'
+   fi
    local int_file src_file src_asm_file
    for src_file; do
       int_file="${int_dir}/${src_file##*/}.o"
@@ -141,10 +149,10 @@ build() {
             ;;
          (*)
             src_asm_file="${asm_dir}/${src_file##*/}.s"
-            avr-g++ ${CFLAGS} -S -o "${src_asm_file}" "${src_file}"
+            ${CC} ${CFLAGS} -S -o "${src_asm_file}" "${src_file}"
             ;;
          esac
-         avr-g++ ${CFLAGS} -c -o "${int_file}" "${src_file}"
+         ${CC} ${CFLAGS} -c -o "${int_file}" "${src_file}"
       fi
    done
 
@@ -167,7 +175,7 @@ build() {
          echo "${lib}"
       done
    } |
-   xargs avr-g++ ${CFLAGS} ${LDFLAGS} -o "${bin_file}"
+   xargs ${CC} ${CFLAGS} ${LDFLAGS} -o "${bin_file}"
 
    echo "Generating ${bin_asm_file}"
    avr-objdump -CS "${bin_file}" >"${bin_asm_file}"

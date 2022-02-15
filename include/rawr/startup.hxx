@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 
@@ -26,7 +26,6 @@ extern "C" [[noreturn]] __attribute__((section(".init9"))) void uc_main();
 __asm__(
    "\n\t" ".section .init0,\"ax\",@progbits"
    "\n\t" ".global __vectors"
-   "\n\t" ".func __vectors"
    "\n"   "__vectors:"
    "\n\t" "   " RAWR_ASM_JMP " __init"
    "\n\t" ".altmacro"
@@ -45,11 +44,9 @@ __asm__(
    "\n\t" "   .set __vector_index, __vector_index + 1"
    "\n\t" ".endr"
    "\n\t" ".noaltmacro"
-   "\n\t" ".endfunc"
    "\n\t"
    "\n\t" ".section .init0,\"ax\",@progbits"
    "\n\t" ".weak	__init"
-   "\n\t" ".func	__init"
    "\n"   "__init:"
    "\n"
    "\n\t" ".section .init2,\"ax\",@progbits"

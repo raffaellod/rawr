@@ -65,8 +65,9 @@ private:
 
    template <typename L>
    struct lambda_impl : impl {
-      explicit lambda_impl(L lambda_) :
-         lambda{forward<L>(lambda_)} {
+      template <typename L2>
+      explicit lambda_impl(L2 && lambda_) :
+         lambda{forward<L2>(lambda_)} {
       }
 
       virtual Ret call(Args... args) const override {
@@ -122,7 +123,7 @@ public:
    }
 
    template <typename L>
-   /*implicit*/ constexpr function(L lambda) :
+   /*implicit*/ constexpr function(L && lambda) :
       set{true} {
       static_assert(sizeof(lambda_impl<L>) <= sizeof impl_storage, "cannot use lambdas of size > sizeof impl_storage - vtable cost");
       new(impl_storage) lambda_impl<L>{forward<L>(lambda)};

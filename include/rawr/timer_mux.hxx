@@ -90,6 +90,17 @@ public:
    static constexpr chrono::hertz frequency{F_CPU};
    static constexpr chrono::milliseconds min_max_duration{3000_ms};
 
+private:
+   struct delay_t {
+      uint16_t remaining_ticks;
+      uint16_t initial_ticks;
+      function<void ()> callback;
+
+      constexpr bool active() const {
+         return callback != nullptr;
+      }
+   };
+
 public:
    struct delay_control {
    private:
@@ -97,25 +108,27 @@ public:
 
    public:
       constexpr delay_control() :
-         index{-1} {
+         delay{nullptr} {
       }
 
       explicit constexpr operator bool() const {
-         return index >= 0;
+         return delay != nullptr;
       }
 
       void cancel() {
+         delay->callback = nullptr;
+         // Make sure *this can’t be reused.
+         delay = nullptr;
          // Don’t bother rescheduling the timer; that will happen when the interrupt occurs.
-         timer_mux::delays[index].callback = nullptr;
       }
 
    private:
-      explicit delay_control(uint8_t index_) :
-         index{static_cast<int8_t>(index_)} {
+      explicit delay_control(delay_t * delay_) :
+         delay{delay_} {
       }
 
    private:
-      int8_t index;
+      delay_t * const delay;
    };
 
 private:
@@ -138,16 +151,6 @@ private:
    }
 
    static constexpr uint16_t milliscaler = default_milliscaler();
-
-   struct delay_t {
-      uint16_t remaining_ticks;
-      uint16_t initial_ticks;
-      function<void ()> callback;
-
-      constexpr bool active() const {
-         return callback != nullptr;
-      }
-   };
 
 public:
    timer_mux() {
@@ -208,7 +211,7 @@ public:
       timer.value = 0;
       TIMSK.set_bit(tc_comp::interrupt_enable_bit);
 
-      return delay_control{static_cast<uint8_t>(ret_delay - &delays[0])};
+      return delay_control{ret_delay};
    }
 
    /*! Schedules a delayed call to the specified callback. The call can be prevented by invoking cancel() on

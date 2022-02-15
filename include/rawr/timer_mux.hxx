@@ -267,10 +267,10 @@ private:
 
    template <typename Ret = uint16_t>
    static constexpr Ret milliscaled_ticks(
-      chrono::milliseconds delay, uint16_t prescaler, uint16_t milliscaler
+      chrono::milliseconds delay, uint16_t prescaler_, uint16_t milliscaler_
    ) {
       return static_cast<Ret>(delay.count()) * static_cast<Ret>(
-         int_round_div(int_round_div(frequency, prescaler), milliscaler).count()
+         int_round_div(int_round_div(frequency, prescaler_), milliscaler_).count()
       );
    }
 

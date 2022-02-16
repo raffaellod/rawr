@@ -87,8 +87,10 @@ if [ -z "${use_clang}" ]; then
 fi
 CFLAGS="-std=c++20 -fvisibility=internal ${CFLAGS}"
 # Change to false to link against avr-libc’s startup files for maximum compatibility.
+# Note however that doing so will kill soma/all rawr interrupt vectors, and will also result in slightly
+# larger code size.
 if true; then
-   CFLAGS="-DRAWR_STARTUP ${CFLAGS}"
+   CFLAGS="-DRAWR_STARTUP -fno-toplevel-reorder ${CFLAGS}"
    if [ -n "${use_clang}" ]; then
       LDFLAGS="-nostdlib ${LDFLAGS}"
    else

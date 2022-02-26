@@ -12,9 +12,6 @@ LED blinker example
 This program will toggle pin B3 every 250 ms, making an LED blink if one is connected via a resistor between
 B3 and Vcc or GND. */
 
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
-
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/startup.hxx>
 #include <rawr/timer_mux.hxx>

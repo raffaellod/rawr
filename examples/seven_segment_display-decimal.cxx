@@ -13,9 +13,6 @@ This program count from 0 to 9 over and over, showing the number on a 7-segment 
 the code, below. The increment will occur every second, while the decimal point will stay on for half a second
 every second. */
 
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
-
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/seven_segment_display.hxx>
 #include <rawr/startup.hxx>

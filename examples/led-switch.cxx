@@ -12,9 +12,6 @@ Switch-toggled LEDs example
 This program will toggle pin B3 every time D5 is grounded (defaults to 1 via pull-up), and B4 every time
 D4 is grounded. Both D4 and D5 feature a software debouncer using timer_mux. */
 
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
-
 #define RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE 8
 
 #include <rawr/binary_input_pin.hxx>

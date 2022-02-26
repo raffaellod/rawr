@@ -12,9 +12,6 @@ Watchdog timer example
 This program lets the user turn on or off an LED (on B4, active high) by grounding D4 or D5 (active low) while
 the watchdog timer is running. After 4 seconds of inactivity, the microcontroller is reset. */
 
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
-
 #include <rawr/binary_input_pin.hxx>
 #include <rawr/hw/binary_output_pin.hxx>
 #include <rawr/hw/watchdog_timer.hxx>

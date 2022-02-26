@@ -1,6 +1,6 @@
 /* -*- coding: utf-8; mode: c++; tab-width: 3; indent-tabs-mode: nil -*-
 
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is distributed under the terms of the Creative Commons Attribution-ShareAlike 4.0 International
 (CC BY-SA 4.0) license.
@@ -11,9 +11,6 @@ Variable-frequency LED blinker example
 
 Starting from a frequency of 4 Hz, the LED connected to pin B4 (active high) will be toggled at a frequency
 adjustable by grounding D4 (adjust faster) or D5 (adjust slower). */
-
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
 
 #define RAWR_FUNCTION_DEFAULT_MAX_LAMBDA_SIZE 12
 

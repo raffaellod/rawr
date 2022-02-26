@@ -12,9 +12,6 @@ Single 7-segment display alphanumeric enumerator
 This program cycles letters and digits, showing them on a 7-segment display connected as listed in the code,
 below. The increment will occur every second. */
 
-/* MCU ATtiny4313 */
-#define F_CPU 1000000
-
 #include <rawr/seven_segment_display.hxx>
 #include <rawr/startup.hxx>
 #include <rawr/timer_mux.hxx>

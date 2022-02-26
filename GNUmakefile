@@ -19,6 +19,27 @@
 .POSIX:
 .SUFFIXES:
 
+.PHONY: help
+help:
+	@echo 'Example invocations:'
+	@echo
+	@echo 'make config'
+	@echo '  Generates a Makefile.config file with the MCU model to compile for, and its operating frequency.'
+	@echo 'make all'
+	@echo '  Builds all sources in examples/file_name.cxx into hex/examples/file_name.hex .'
+	@echo 'make EXAMPLE=file_name'
+	@echo '  Like above, but only build examples/file_name.cxx .'
+	@echo 'make EXAMPLE=file_name flash'
+	@echo '  Like above, then write the generated hex file to a connected AVR MCU via avrdude.'
+	@echo 'make MCU=ATmega328p F_CPU=5000 EXAMPLE=blink flash'
+	@echo '  Like above, but overrides MCU model and F_CPU on the fly via command line.'
+	@echo 'make HEX=path/to/file_name.hex flash'
+	@echo '  Instead of writing one of the examples, write the hex file indicated by path.'
+	@echo 'make clean'
+	@echo '  Delete all build output files.'
+	@echo 'make distclean'
+	@echo '  Like above, but also delete Makefile.config .'
+
 # Configuration ----------------------------------------------------------------------------------------------
 
 # $(O) is where we’ll put all generated files.
@@ -173,12 +194,3 @@ clean:
 .PHONY: distclean
 distclean: clean
 	rm -f $(O)Makefile.config
-
-# Other rules ------------------------------------------------------------------------------------------------
-
-.PHONY: help
-help:
-	echo 'make EXAMPLE=name'
-	echo 'make EXAMPLE=name flash'
-	echo 'make MCU=ATmega328p F_CPU=5000 EXAMPLE=blink flash'
-	echo 'make HEX=file.hex flash'

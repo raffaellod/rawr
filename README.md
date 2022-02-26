@@ -23,30 +23,32 @@ leaving as much room as possible on your AVR for your projects.
 
 ## 2. Getting RAWR
 
-RAWR is [available on GitHub](https://github.com/raffaellod/rawr); to download it, just clone the
-repository:
+RAWR is [available on GitHub](https://github.com/raffaellod/rawr); to download it, just clone the repository:
 
-```
-git clone https://github.com/raffaellod/rawr.git
-```
-
-RAWR comes as a bunch of header files, so you won’t need to install it.
-
-
-## 3. Using RAWR
-
-RAWR comes with an utility to build programs in a Linux environment; to invoke it, run:
-
-```
-path/to/rawr/prog write path/to/your/file.cxx
+```sh
+$ git clone https://github.com/raffaellod/rawr.git
+$ cd rawr
 ```
 
-For usage examples, please see the source files in the `examples` folder. Note that you’ll need to change the
-MCU line in the examples to match your AVR, as well as the usual F_CPU value, if you want to flash the
-generated firmware to your microcontroller.
+## 3. Installing
+
+RAWR comes as a bunch of header files, so all you need to do to use it is make sure your compiler can find
+RAWR’s include directory, i.e. `-Ipath/to/rawr/include` .
+
+TODO: `make install` .
 
 
-## 4. Compatibility
+## 4. Using RAWR
+
+RAWR comes with a `make config` utility that will prepare for building the included examples for a specific
+AVR MCU connected via avrdude.
+
+After configuring, you can write one of the examples to your MCU via `make EXAMPLE=file_name flash` .
+
+TODO: split makefile into generic include + RAWR-specific top-level, so that other projects may use the
+include.
+
+## 5. Compatibility
 
 RAWR is written to rely 100% on avr-libc’s header files for all hardware definitions; this means that as long
 as avr-libc supports a given microcontroller, so will RAWR.
@@ -54,13 +56,13 @@ as avr-libc supports a given microcontroller, so will RAWR.
 With the goal of generating the smallest firmware possible, RAWR by default will not link in avr-libc startup
 files, instead providing its own. This behavior can be changed with a one-line change in the prog script.
 
-RAWR requires a g++ version with C++17 support.
+RAWR requires a g++ version with C++20 support.
 
 
 
 
 --------------------------------------------------------------------------------------------------------------
-Copyright 2017 Raffaello D. Di Napoli
+Copyright 2017, 2022 Raffaello D. Di Napoli
 
 This file is part of RAWR.
 

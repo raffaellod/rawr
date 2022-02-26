@@ -128,7 +128,7 @@ public:
       }
 
    private:
-      delay_t * const delay;
+      delay_t * delay;
    };
 
 private:

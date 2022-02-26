@@ -49,15 +49,19 @@ struct binary_input_port_asm;
 #endif
 #undef _RAWR_SPECIALIZE_BINARY_INPUT_PORT_ASM
 
+struct binary_input_pin_data {
+   function<void (bool)> changed_callback;
+};
+
 template <char Port>
 class binary_input_port {
 private:
    typedef hw::io_port<Port> io_port_;
-   static constexpr uint8_t bit_size = io_port_::bit_size;
+   static constexpr unsigned bit_size{io_port_::bit_size};
 
 protected:
-   static constexpr void set_last_pins_bit(uint8_t bit, bool value) {
-      if (value) {
+   static void set_last_pins_bit(uint8_t bit) {
+      if ((io_port_::pins & _BV(bit)) != 0) {
          bitmanip::set(&last_pins, bit);
       } else {
          bitmanip::clear(&last_pins, bit);
@@ -68,61 +72,32 @@ private:
    // Weird name to work around g++ name check for interrupt vectors.
    static __attribute__((signal, used)) void __vector() {
       binary_input_port_asm<Port>::emit();
-      uint8_t curr_pins = *io_port_::pins, changed_pins = curr_pins ^ last_pins;
-      for (uint8_t i = 0; i < RAWR_COUNTOF(pin_changed_callbacks); ++i) {
-         if ((changed_pins & _BV(i)) != 0) {
-            auto & pin_changed_callback = pin_changed_callbacks[i];
-            if (pin_changed_callback) {
-               pin_changed_callback((curr_pins & _BV(i)) != 0);
-            }
+      uint8_t curr_pins = io_port_::pins, changed_pins = curr_pins ^ last_pins;
+      for (uint8_t i = 0; i < RAWR_COUNTOF(per_pin_data); ++i) {
+         if ((changed_pins & _BV(i)) == 0) {
+            // This pin did not really change.
+            continue;
+         }
+         auto pin_data{per_pin_data[i]};
+         if (pin_data && pin_data->changed_callback) {
+            pin_data->changed_callback((curr_pins & _BV(i)) != 0);
          }
       }
       last_pins = curr_pins;
    }
 
 protected:
-   static function<void (bool)> pin_changed_callbacks[bit_size];
-   /* Initial values for each bit as assigned by binary_input_pin::set_callback() (from InitialPullup) or
-   binary_input_pin_initializer::setup() (from its argument). */
+   static binary_input_pin_data * per_pin_data[bit_size];
+   /*! Since all pins on a port share the same pin change interrupt, we need to track the last state of each
+   pin to avoid invoking changed callbacks for pins that did not, in fact, change. */
    static uint8_t volatile last_pins;
 };
 
 template <char Port>
-function<void (bool)> binary_input_port<Port>::pin_changed_callbacks[bit_size];
+binary_input_pin_data * binary_input_port<Port>::per_pin_data[bit_size];
 
 template <char Port>
-/*__attribute__((section(".noinit")))*/ uint8_t volatile binary_input_port<Port>::last_pins;
-
-template <char Port, uint8_t Bit, int InitialPullup>
-class binary_input_pin_initializer;
-
-template <char Port, uint8_t Bit>
-class binary_input_pin_initializer<Port, Bit, -1> {
-private:
-   typedef hw::io_port<Port> io_port_;
-
-public:
-   static void setup(bool pullup) {
-      io_port_::data_direction.clear_bit(Bit);
-      if (pullup) {
-         io_port_::data.set_bit(Bit);
-      } else {
-         io_port_::data.clear_bit(Bit);
-      }
-      io_port_::pcint_mask.set_bit(Bit);
-      PCICR.set_bit(io_port_::pcint_enable_bit);
-   }
-};
-
-template <char Port, uint8_t Bit>
-class binary_input_pin_initializer<Port, Bit, true> :
-   private hw::io_port_bit_input_setup<Port, Bit, true /*pullup*/, true /*PCINT*/> {
-};
-
-template <char Port, uint8_t Bit>
-class binary_input_pin_initializer<Port, Bit, false> :
-   private hw::io_port_bit_input_setup<Port, Bit, false /*pullup*/, true /*PCINT*/> {
-};
+uint8_t volatile binary_input_port<Port>::last_pins;
 
 }} //namespace rawr::_pvt
 
@@ -130,29 +105,43 @@ namespace rawr {
 
 /*! Configures an I/O port’s pin as input, optionally pre-enabling its pin change interrupt and setting its
 pull-up to the value provided via the third template argument. */
-template <char Port, uint8_t Bit, int InitialPullup = -1>
-class binary_input_pin :
-   public _pvt::binary_input_pin_initializer<Port, Bit, InitialPullup>,
-   public _pvt::binary_input_port<Port> {
+template <char Port, uint8_t Bit>
+class binary_input_pin : public _pvt::binary_input_port<Port>, protected _pvt::binary_input_pin_data {
 private:
    typedef _pvt::binary_input_port<Port> binary_input_port_;
    typedef hw::io_port<Port> io_port_;
 
 public:
+   //! Configures the pin as input, without activating internal pull-up or pull-down.
+   binary_input_pin() {
+      io_port_::data_direction.clear_bit(Bit);
+   }
+
+   //! Configures the pin as input, activating internal pull-up or pull-down.
+   binary_input_pin(bool pullup) :
+      binary_input_pin{} {
+      if (pullup) {
+         io_port_::data.set_bit(Bit);
+      } else {
+         io_port_::data.clear_bit(Bit);
+      }
+   }
+
    // Note: this clears the “interrupt occurred” flag for the whole port, not just this pin.
-   static void clear() {
+   void clear() {
       PCIFR.set_bit(io_port_::pcint_flag_bit);
    }
 
-   static void set_callback(function<void (bool)> const & callback) {
-      if (InitialPullup != -1) {
-         binary_input_port_::set_last_pins_bit(Bit, InitialPullup != 0);
-      }
-      binary_input_port_::pin_changed_callbacks[Bit] = callback;
+   template <typename F>
+   void set_callback(F callback) {
+      binary_input_port_::set_last_pins_bit(Bit);
+      changed_callback = move(callback);
+      io_port_::pcint_mask.set_bit(Bit);
+      PCICR.set_bit(io_port_::pcint_enable_bit);
    }
 
-   static bool value() {
-      return (*io_port_::pins & _BV(Bit)) != 0;
+   bool value() const {
+      return (io_port_::pins & _BV(Bit)) != 0;
    }
 };
 

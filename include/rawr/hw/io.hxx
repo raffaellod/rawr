@@ -39,9 +39,14 @@ namespace rawr { namespace hw {
 
 /*! In this unusual class, every method is const because instances are supposed to be declared constexpr so
 that they can be defined within a class declaration, and they won’t allocate any memory (desirable since their
-storage is an I/O memory register). */
-template <unsigned Addr, typename T>
+storage is an I/O memory register).
+
+Note: Addr is 16-bit wide because _SFR_MEM_ADDR() has a cast to uint16_t, implying that on some MCUs, there
+are registers with address > 0xff. */
+template <uint16_t Addr, typename T>
 struct io_mem_reg {
+   //! Used when we need just the address as a number. So far, only the redefined _SFR_MEM_ADDR() uses it.
+   static constexpr auto addr{Addr};
    //! Allows to extract the type; mostly used to get its size.
    using type = T;
 
@@ -80,9 +85,11 @@ struct io_mem_reg {
 #undef _MMIO_BYTE
 #undef _MMIO_WORD
 #undef _MMIO_DWORD
+#undef _SFR_MEM_ADDR
 #define _MMIO_BYTE(mem_addr)  (::rawr::hw::io_mem_reg<mem_addr, uint8_t>{})
 #define _MMIO_WORD(mem_addr)  (::rawr::hw::io_mem_reg<mem_addr, uint16_t>{})
 #define _MMIO_DWORD(mem_addr) (::rawr::hw::io_mem_reg<mem_addr, uint32_t>{})
+#define _SFR_MEM_ADDR(sfr)    decltype(sfr)::addr
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
